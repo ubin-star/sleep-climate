@@ -11,7 +11,7 @@ fun Float.spoken(): String {
 
 /** 8시간 → "8시간", 1시간 30분 → "1시간 30분", 3분 → "3분" */
 fun spokenDuration(ms: Long): String {
-    val totalMinutes = (ms / 60_000L).coerceAtLeast(1L)
+    val totalMinutes = ((ms + 30_000L) / 60_000L).coerceAtLeast(1L)
     val h = totalMinutes / 60
     val m = totalMinutes % 60
     return when {

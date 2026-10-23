@@ -46,6 +46,7 @@ class VoiceCommandParserTest {
         assertEquals("8시간", spokenDuration(8 * 3_600_000L))
         assertEquals("1시간 30분", spokenDuration(90 * 60_000L))
         assertEquals("3분", spokenDuration(3 * 60_000L))
+        assertEquals("3분", spokenDuration(3 * 60_000L - 5))
     }
 
     @Test
