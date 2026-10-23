@@ -30,10 +30,10 @@ private const val START_ANGLE = 135f
 private const val SWEEP = 270f
 
 /**
- * 원형 온도 다이얼
- * - 회색 트랙: 14~32°C
- * - 초록 띠: 허용 범위, 흰 눈금: 목표 온도
- * - 색 점: 현재 실내 온도 (범위 안이면 초록, 벗어나면 경고색)
+ * 게이지형 온도 다이얼
+ * - 바깥 눈금: 1°C 간격 (2°C마다 긴 눈금)
+ * - 얇은 트랙 위 밝은 구간: 허용 범위, 짧은 흰 선: 목표 온도
+ * - 빛나는 점: 현재 실내 온도 (범위 안이면 민트, 벗어나면 온도색)
  */
 @Composable
 fun TemperatureDial(
@@ -59,39 +59,52 @@ fun TemperatureDial(
 
     Box(modifier.aspectRatio(1f), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
-            val stroke = size.minDimension * 0.07f
-            val diameter = size.minDimension - stroke * 2
+            val track = size.minDimension * 0.022f
+            val tickZone = size.minDimension * 0.05f
+            val diameter = size.minDimension - tickZone * 2 - track * 2
             val topLeft = Offset((size.width - diameter) / 2, (size.height - diameter) / 2)
             val arcSize = Size(diameter, diameter)
-            fun angleOf(t: Float) = START_ANGLE + SWEEP * ((t.coerceIn(DIAL_MIN, DIAL_MAX) - DIAL_MIN) / (DIAL_MAX - DIAL_MIN))
-
-            drawArc(SC.SurfaceHigh, START_ANGLE, SWEEP, false, topLeft, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
-            drawArc(
-                SC.Ok.copy(alpha = 0.55f), angleOf(animatedLow), angleOf(animatedHigh) - angleOf(animatedLow),
-                false, topLeft, arcSize, style = Stroke(stroke, cap = StrokeCap.Round)
-            )
-
             val center = Offset(size.width / 2, size.height / 2)
             val radius = diameter / 2
+            fun angleOf(t: Float) = START_ANGLE + SWEEP * ((t.coerceIn(DIAL_MIN, DIAL_MAX) - DIAL_MIN) / (DIAL_MAX - DIAL_MIN))
             fun pointAt(t: Float, r: Float): Offset {
                 val rad = Math.toRadians(angleOf(t).toDouble())
                 return Offset(center.x + (r * cos(rad)).toFloat(), center.y + (r * sin(rad)).toFloat())
             }
-            // 목표 온도 눈금
-            drawLine(
-                SC.TextPrimary, pointAt(animatedTarget, radius - stroke * 0.9f), pointAt(animatedTarget, radius + stroke * 0.9f),
-                strokeWidth = stroke * 0.18f, cap = StrokeCap.Round
+
+            // 눈금
+            for (t in DIAL_MIN.toInt()..DIAL_MAX.toInt()) {
+                val major = t % 2 == 0
+                val inBand = t.toFloat() in animatedLow..animatedHigh
+                drawLine(
+                    if (inBand) SC.Ok.copy(alpha = 0.7f) else SC.TextTertiary.copy(alpha = if (major) 0.9f else 0.5f),
+                    pointAt(t.toFloat(), radius + track * 1.6f),
+                    pointAt(t.toFloat(), radius + track * 1.6f + if (major) tickZone * 0.75f else tickZone * 0.4f),
+                    strokeWidth = if (major) 2.5f else 1.5f,
+                    cap = StrokeCap.Round
+                )
+            }
+
+            drawArc(SC.SurfaceHigh, START_ANGLE, SWEEP, false, topLeft, arcSize, style = Stroke(track, cap = StrokeCap.Round))
+            drawArc(
+                SC.Ok.copy(alpha = 0.85f), angleOf(animatedLow), angleOf(animatedHigh) - angleOf(animatedLow),
+                false, topLeft, arcSize, style = Stroke(track, cap = StrokeCap.Round)
             )
-            // 현재 온도 점
+            // 목표 온도
+            drawLine(
+                SC.TextPrimary, pointAt(animatedTarget, radius - track * 2.2f), pointAt(animatedTarget, radius + track * 1.2f),
+                strokeWidth = 4f, cap = StrokeCap.Round
+            )
+            // 현재 온도
             if (currentTemp != null) {
                 val p = pointAt(animatedCurrent, radius)
-                drawCircle(indicatorColor.copy(alpha = 0.35f), stroke * 0.95f, p)
-                drawCircle(indicatorColor, stroke * 0.6f, p)
-                drawCircle(SC.Background, stroke * 0.22f, p)
+                drawCircle(indicatorColor.copy(alpha = 0.18f), track * 3.2f, p)
+                drawCircle(indicatorColor.copy(alpha = 0.35f), track * 2.0f, p)
+                drawCircle(indicatorColor, track * 1.1f, p)
             }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(centerLabel, style = MaterialTheme.typography.labelMedium, color = SC.TextSecondary)
+            Caption(centerLabel)
             Text(
                 centerValue,
                 style = MaterialTheme.typography.displayMedium,

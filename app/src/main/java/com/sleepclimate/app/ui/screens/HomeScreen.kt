@@ -24,11 +24,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sleepclimate.app.R
 import com.sleepclimate.app.data.vehicle.simulation.SimulationScenario
@@ -37,21 +37,20 @@ import com.sleepclimate.app.domain.model.VehicleState
 import com.sleepclimate.app.domain.model.VehicleSupportLevel
 import com.sleepclimate.app.ui.components.AdaptiveSplit
 import com.sleepclimate.app.ui.components.CabinView
+import com.sleepclimate.app.ui.components.Caption
 import com.sleepclimate.app.ui.components.ChoiceRow
+import com.sleepclimate.app.ui.components.LineIcon
+import com.sleepclimate.app.ui.components.LineIcons
 import com.sleepclimate.app.ui.components.Panel
-import com.sleepclimate.app.ui.components.StatusPill
-import com.sleepclimate.app.ui.components.energyText
-import com.sleepclimate.app.ui.components.supportLabel
+import com.sleepclimate.app.ui.components.VehicleStatusBar
+import com.sleepclimate.app.ui.components.dimmedIf
 import com.sleepclimate.app.ui.home.HomeViewModel
 import com.sleepclimate.app.ui.home.StartAvailability
 import com.sleepclimate.app.ui.theme.SC
 import com.sleepclimate.app.ui.theme.temperatureColor
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
- * 홈 — 차량 상태를 한눈에, 프리셋 카드 한 번 탭으로 세션 설정 진입
+ * 홈 — 차량 렌더와 휴식 모드 타일을 첫 화면에 바로 (하위 메뉴 없이 한 번 탭으로 진입)
  */
 @Composable
 fun HomeScreen(viewModel: HomeViewModel, onPresetSelected: (SessionPreset) -> Unit) {
@@ -60,24 +59,21 @@ fun HomeScreen(viewModel: HomeViewModel, onPresetSelected: (SessionPreset) -> Un
     val availability by viewModel.startAvailability.collectAsStateWithLifecycle()
     val simulation by viewModel.simulationEnabled.collectAsStateWithLifecycle()
 
-    Column(Modifier.fillMaxSize().background(SC.Background).padding(32.dp)) {
-        TopStatusBar(state, support, simulation)
+    Column(Modifier.fillMaxSize().background(SC.Background).padding(horizontal = 40.dp, vertical = 28.dp)) {
+        VehicleStatusBar(state, stringResource(R.string.app_name), simulation)
         Spacer(Modifier.height(24.dp))
         AdaptiveSplit(
-            visual = { modifier -> CabinPanel(state, modifier.padding(end = 24.dp, bottom = 16.dp)) },
+            visual = { modifier -> CabinPanel(state, support, modifier.padding(end = 32.dp, bottom = 12.dp)) },
             controls = { modifier, wide ->
                 Column(
                     modifier.then(if (wide) Modifier.verticalScroll(rememberScrollState()) else Modifier),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(stringResource(R.string.home_question), style = MaterialTheme.typography.headlineMedium)
-                    PresetGrid(enabled = availability == StartAvailability.READY, onPresetSelected = onPresetSelected)
-                    StartHint(availability, support)
-                    SimulationCard(
-                        enabled = simulation,
-                        scenario = viewModel.simulationScenario,
-                        onChange = viewModel::setSimulation
-                    )
+                    Caption(stringResource(R.string.home_question))
+                    ModeTiles(enabled = availability == StartAvailability.READY, onPresetSelected = onPresetSelected)
+                    StartHint(availability)
+                    Spacer(Modifier.height(4.dp))
+                    SimulationCard(simulation, viewModel.simulationScenario, viewModel::setSimulation)
                 }
             }
         )
@@ -85,44 +81,7 @@ fun HomeScreen(viewModel: HomeViewModel, onPresetSelected: (SessionPreset) -> Un
 }
 
 @Composable
-fun TopStatusBar(state: VehicleState, support: VehicleSupportLevel, simulation: Boolean) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineLarge, letterSpacing = 2.sp)
-            Text(stringResource(R.string.app_tagline), style = MaterialTheme.typography.bodyMedium, color = SC.TextSecondary)
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (simulation) StatusPill(stringResource(R.string.badge_simulation), SC.Warn)
-            val connected = state.lastUpdatedMs > 0 && state.isConnected
-            StatusPill(
-                stringResource(
-                    when {
-                        state.lastUpdatedMs == 0L -> R.string.status_checking
-                        state.isConnected -> R.string.status_connected
-                        else -> R.string.status_disconnected
-                    }
-                ),
-                if (connected) SC.Ok else SC.TextSecondary
-            )
-            StatusPill(stringResource(supportLabel(support)), if (support == VehicleSupportLevel.FULL) SC.Accent else SC.TextSecondary)
-            StatusPill(
-                stringResource(
-                    when (state.isParked) {
-                        true -> R.string.park_status_parked
-                        false -> R.string.park_status_driving
-                        null -> R.string.park_status_unknown
-                    }
-                ),
-                if (state.isParked == false) SC.Danger else SC.TextPrimary
-            )
-            StatusPill(energyText(state), SC.TextPrimary)
-        }
-    }
-}
-
-@Composable
-private fun CabinPanel(state: VehicleState, modifier: Modifier) {
-    val timeFormat = remember { SimpleDateFormat("HH:mm:ss", Locale.KOREAN) }
+private fun CabinPanel(state: VehicleState, support: VehicleSupportLevel, modifier: Modifier) {
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(SC.Night)) {
         CabinView(
             interiorTemp = state.interiorTempCelsius,
@@ -132,41 +91,59 @@ private fun CabinPanel(state: VehicleState, modifier: Modifier) {
             hasPet = false,
             modifier = Modifier.fillMaxSize()
         )
-        Column(Modifier.align(Alignment.BottomStart).padding(28.dp)) {
+        Column(Modifier.align(Alignment.TopStart).padding(36.dp)) {
+            Caption(stringResource(R.string.label_interior))
             Text(
-                state.interiorTempCelsius?.let { stringResource(R.string.interior_short_format, it) }
-                    ?: stringResource(R.string.current_vehicle_temp_unavailable),
+                state.interiorTempCelsius?.let { "%.1f°".format(it) } ?: "—",
                 style = MaterialTheme.typography.displayMedium,
                 color = temperatureColor(state.interiorTempCelsius)
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                state.exteriorTempCelsius?.let {
-                    Text(stringResource(R.string.exterior_short_format, it), style = MaterialTheme.typography.titleMedium, color = SC.TextSecondary)
-                }
-                if (state.lastUpdatedMs > 0) {
-                    Text(
-                        stringResource(R.string.last_updated_format, timeFormat.format(Date(state.lastUpdatedMs))),
-                        style = MaterialTheme.typography.titleMedium, color = SC.TextSecondary
-                    )
-                }
-            }
+            Text(
+                stringResource(
+                    when (support) {
+                        VehicleSupportLevel.FULL -> R.string.home_mode_full
+                        VehicleSupportLevel.READ_ONLY -> R.string.home_mode_read_only
+                        VehicleSupportLevel.NONE -> R.string.badge_no_support
+                        VehicleSupportLevel.UNKNOWN -> R.string.status_checking
+                    }
+                ),
+                style = MaterialTheme.typography.bodyLarge,
+                color = SC.TextSecondary
+            )
         }
     }
 }
 
+private data class ModeTile(val preset: SessionPreset, val title: Int, val icon: ImageVector, val tint: Color)
+
 @Composable
-private fun PresetGrid(enabled: Boolean, onPresetSelected: (SessionPreset) -> Unit) {
-    val presets = listOf(
-        SessionPreset.SUMMER_CAMPING to R.string.preset_summer,
-        SessionPreset.WINTER_CAMPING to R.string.preset_winter,
-        SessionPreset.SHORT_REST to R.string.preset_short,
-        SessionPreset.CUSTOM to R.string.preset_custom
+private fun ModeTiles(enabled: Boolean, onPresetSelected: (SessionPreset) -> Unit) {
+    val tiles = listOf(
+        ModeTile(SessionPreset.SUMMER_CAMPING, R.string.preset_summer, LineIcons.Snowflake, SC.Cool),
+        ModeTile(SessionPreset.WINTER_CAMPING, R.string.preset_winter, LineIcons.Flame, SC.Heat),
+        ModeTile(SessionPreset.SHORT_REST, R.string.preset_short, LineIcons.Cup, SC.TextPrimary),
+        ModeTile(SessionPreset.CUSTOM, R.string.preset_custom, LineIcons.Sliders, SC.TextSecondary)
     )
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        presets.chunked(2).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                row.forEach { (preset, label) ->
-                    PresetCard(preset, stringResource(label), enabled, Modifier.weight(1f)) { onPresetSelected(preset) }
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        tiles.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                row.forEach { tile ->
+                    Panel(
+                        modifier = Modifier.weight(1f).dimmedIf(!enabled),
+                        onClick = if (enabled) ({ onPresetSelected(tile.preset) }) else null
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                            LineIcon(tile.icon, tint = tile.tint, size = 34.dp)
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(stringResource(tile.title), style = MaterialTheme.typography.titleLarge)
+                                Text(
+                                    if (tile.preset == SessionPreset.CUSTOM) " "
+                                    else stringResource(R.string.preset_detail_format, tile.preset.targetTempCelsius, tile.preset.durationHours),
+                                    style = MaterialTheme.typography.bodyLarge, color = SC.TextSecondary
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -174,35 +151,18 @@ private fun PresetGrid(enabled: Boolean, onPresetSelected: (SessionPreset) -> Un
 }
 
 @Composable
-private fun PresetCard(preset: SessionPreset, title: String, enabled: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    Panel(
-        modifier = modifier.alpha(if (enabled) 1f else 0.4f),
-        onClick = if (enabled) onClick else null,
-        borderColor = if (enabled && preset != SessionPreset.CUSTOM) SC.Accent.copy(alpha = 0.6f) else SC.Border
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(preset.emoji, fontSize = 40.sp)
-            Text(title, style = MaterialTheme.typography.titleLarge)
-            if (preset != SessionPreset.CUSTOM) {
-                Text(
-                    stringResource(R.string.preset_detail_format, preset.targetTempCelsius, preset.durationHours),
-                    style = MaterialTheme.typography.bodyLarge, color = SC.TextSecondary
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StartHint(availability: StartAvailability, support: VehicleSupportLevel) {
+private fun StartHint(availability: StartAvailability) {
     val hint = when (availability) {
         StartAvailability.CHECKING     -> R.string.home_hint_checking
         StartAvailability.DISCONNECTED -> R.string.home_hint_disconnected
         StartAvailability.NO_SUPPORT   -> R.string.home_hint_no_support
         StartAvailability.DRIVING      -> R.string.home_hint_driving
-        StartAvailability.READY        -> if (support == VehicleSupportLevel.READ_ONLY) R.string.home_hint_read_only else null
+        StartAvailability.READY        -> null
     } ?: return
-    Text(stringResource(hint), style = MaterialTheme.typography.bodyLarge, color = SC.Warn)
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        LineIcon(LineIcons.Warning, tint = SC.Warn, size = 22.dp)
+        Text(stringResource(hint), style = MaterialTheme.typography.bodyLarge, color = SC.Warn)
+    }
 }
 
 @Composable
@@ -212,17 +172,20 @@ private fun SimulationCard(
     onChange: (Boolean, SimulationScenario) -> Unit
 ) {
     var selected by remember { mutableStateOf(scenario) }
-    Panel(Modifier.fillMaxWidth(), borderColor = if (enabled) SC.Warn.copy(alpha = 0.6f) else SC.Border) {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.badge_simulation), style = MaterialTheme.typography.labelMedium, color = SC.Warn)
-                    Text(stringResource(R.string.sim_switch_label), style = MaterialTheme.typography.titleLarge)
-                }
+    Panel(Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                LineIcon(LineIcons.Flask, tint = if (enabled) SC.Warn else SC.TextSecondary, size = 28.dp)
+                Text(stringResource(R.string.sim_switch_label), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                 Switch(
                     checked = enabled,
                     onCheckedChange = { onChange(it, selected) },
-                    colors = SwitchDefaults.colors(checkedTrackColor = SC.Warn)
+                    colors = SwitchDefaults.colors(
+                        checkedTrackColor = SC.Warn,
+                        uncheckedTrackColor = SC.SurfaceHigh,
+                        uncheckedBorderColor = SC.SurfaceHigh,
+                        uncheckedThumbColor = SC.TextSecondary
+                    )
                 )
             }
             if (enabled) {

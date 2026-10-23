@@ -25,10 +25,12 @@ import com.sleepclimate.app.R
 import com.sleepclimate.app.domain.model.ControlStatus
 import com.sleepclimate.app.domain.model.VehicleSupportLevel
 import com.sleepclimate.app.ui.components.BigButton
+import com.sleepclimate.app.ui.components.Caption
+import com.sleepclimate.app.ui.components.LineIcon
 import com.sleepclimate.app.ui.components.Panel
 import com.sleepclimate.app.ui.components.StatTile
-import com.sleepclimate.app.ui.components.StatusPill
 import com.sleepclimate.app.ui.components.TempChart
+import com.sleepclimate.app.ui.components.VehicleStatusBar
 import com.sleepclimate.app.ui.components.alertColor
 import com.sleepclimate.app.ui.components.alertIcon
 import com.sleepclimate.app.ui.components.alertLabel
@@ -41,14 +43,15 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
-/** 세션 결과 — 밤사이 온도가 어떻게 관리됐는지 요약 */
+/** 휴식 리포트 — 밤사이 온도가 어떻게 관리됐는지 요약 */
 @Composable
 fun ResultScreen(viewModel: SessionViewModel, onHome: () -> Unit) {
     val session by viewModel.currentSession.collectAsStateWithLifecycle()
     val alerts by viewModel.vehicleAlerts.collectAsStateWithLifecycle()
     val events by viewModel.controlEvents.collectAsStateWithLifecycle()
     val samples by viewModel.tempSamples.collectAsStateWithLifecycle()
-    val support = viewModel.vehicleState.value.supportLevel
+    val vehicle by viewModel.vehicleState.collectAsStateWithLifecycle()
+    val simulation by viewModel.simulationEnabled.collectAsStateWithLifecycle()
     val endedAt = remember { System.currentTimeMillis() }
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.KOREAN) }
     BackHandler(onBack = onHome)
@@ -59,79 +62,78 @@ fun ResultScreen(viewModel: SessionViewModel, onHome: () -> Unit) {
     val inRangePercent = samples.takeIf { it.isNotEmpty() }
         ?.let { list -> (list.count { it.tempCelsius in current.tempRangeLow..current.tempRangeHigh } * 100f / list.size).roundToInt() }
 
-    Column(
-        Modifier.fillMaxSize().background(SC.Background).padding(32.dp).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(22.dp)
-    ) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.result_title), style = MaterialTheme.typography.headlineLarge)
-                Text(
-                    stringResource(R.string.session_time_range_format, timeFormat.format(Date(current.startTime)), timeFormat.format(Date(endedAt))),
-                    style = MaterialTheme.typography.titleMedium, color = SC.TextSecondary
+    Column(Modifier.fillMaxSize().background(SC.Background).padding(horizontal = 40.dp, vertical = 28.dp)) {
+        VehicleStatusBar(vehicle, stringResource(R.string.result_title), simulation, onHome)
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Caption(stringResource(R.string.session_time_range_format, timeFormat.format(Date(current.startTime)), timeFormat.format(Date(endedAt))))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                StatTile(
+                    stringResource(R.string.stat_duration),
+                    stringResource(
+                        R.string.duration_value_format,
+                        TimeUnit.MILLISECONDS.toHours(elapsed).toInt(),
+                        (TimeUnit.MILLISECONDS.toMinutes(elapsed) % 60).toInt()
+                    ),
+                    Modifier.weight(1f)
+                )
+                StatTile(
+                    stringResource(R.string.stat_avg_temp),
+                    avgTemp?.let { "%.1f°".format(it) } ?: stringResource(R.string.no_value),
+                    Modifier.weight(1f),
+                    valueColor = temperatureColor(avgTemp)
+                )
+                StatTile(
+                    stringResource(R.string.stat_in_range),
+                    inRangePercent?.let { stringResource(R.string.percent_value_format, it) } ?: stringResource(R.string.no_value),
+                    Modifier.weight(1f),
+                    valueColor = if ((inRangePercent ?: 0) >= 80) SC.Ok else SC.Warn
+                )
+                StatTile(
+                    stringResource(R.string.stat_auto_control),
+                    if (events.isEmpty() && vehicle.supportLevel != VehicleSupportLevel.FULL) stringResource(R.string.no_value)
+                    else stringResource(R.string.auto_control_value_format, events.size, events.count { it.status == ControlStatus.CONFIRMED }),
+                    Modifier.weight(1f)
                 )
             }
-            BigButton(stringResource(R.string.btn_back_home), onHome, Modifier.padding(start = 16.dp))
-        }
 
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            StatTile(
-                stringResource(R.string.stat_duration),
-                stringResource(
-                    R.string.duration_value_format,
-                    TimeUnit.MILLISECONDS.toHours(elapsed).toInt(),
-                    (TimeUnit.MILLISECONDS.toMinutes(elapsed) % 60).toInt()
-                ),
-                Modifier.weight(1f)
-            )
-            StatTile(
-                stringResource(R.string.stat_avg_temp),
-                avgTemp?.let { stringResource(R.string.temp_value_format, it) } ?: stringResource(R.string.no_value),
-                Modifier.weight(1f),
-                valueColor = temperatureColor(avgTemp)
-            )
-            StatTile(
-                stringResource(R.string.stat_in_range),
-                inRangePercent?.let { stringResource(R.string.percent_value_format, it) } ?: stringResource(R.string.no_value),
-                Modifier.weight(1f),
-                valueColor = if ((inRangePercent ?: 0) >= 80) SC.Ok else SC.Warn
-            )
-            StatTile(
-                stringResource(R.string.stat_auto_control),
-                if (events.isEmpty() && support != VehicleSupportLevel.FULL) stringResource(R.string.no_value)
-                else stringResource(R.string.auto_control_value_format, events.size, events.count { it.status == ControlStatus.CONFIRMED }),
-                Modifier.weight(1f),
-                valueColor = SC.Accent
-            )
-        }
-
-        Panel(Modifier.fillMaxWidth()) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(stringResource(R.string.chart_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                    Text(stringResource(R.string.chart_legend), style = MaterialTheme.typography.bodyMedium, color = SC.TextSecondary)
-                }
-                TempChart(samples, current.tempRangeLow, current.tempRangeHigh, Modifier.fillMaxWidth().height(260.dp))
-                if (support != VehicleSupportLevel.FULL && events.isEmpty()) {
-                    Text(stringResource(R.string.command_result_read_only), style = MaterialTheme.typography.bodyMedium, color = SC.TextSecondary)
-                }
-            }
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.alert_summary_label), style = MaterialTheme.typography.titleMedium, color = SC.TextSecondary)
-            if (alerts.isEmpty()) {
-                Text(stringResource(R.string.alert_summary_empty), style = MaterialTheme.typography.bodyLarge)
-            } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    alerts.groupBy { it.type }.forEach { (type, list) ->
-                        StatusPill(
-                            "${alertIcon(type)} " + stringResource(R.string.alert_summary_item_format, stringResource(alertLabel(type)), list.size),
-                            alertColor(type)
-                        )
+            Panel(Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Caption(stringResource(R.string.chart_title), Modifier.weight(1f))
+                        Text(stringResource(R.string.chart_legend), style = MaterialTheme.typography.bodyMedium, color = SC.TextTertiary)
+                    }
+                    TempChart(samples, current.tempRangeLow, current.tempRangeHigh, Modifier.fillMaxWidth().height(280.dp))
+                    if (vehicle.supportLevel != VehicleSupportLevel.FULL && events.isEmpty()) {
+                        Text(stringResource(R.string.command_result_read_only), style = MaterialTheme.typography.bodyMedium, color = SC.TextSecondary)
                     }
                 }
             }
+
+            Panel(Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Caption(stringResource(R.string.alert_summary_label))
+                    if (alerts.isEmpty()) {
+                        Text(stringResource(R.string.alert_summary_empty), style = MaterialTheme.typography.bodyLarge, color = SC.TextSecondary)
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(36.dp)) {
+                            alerts.groupBy { it.type }.forEach { (type, list) ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    LineIcon(alertIcon(type), tint = alertColor(type), size = 22.dp)
+                                    Text(
+                                        stringResource(R.string.alert_summary_item_format, stringResource(alertLabel(type)), list.size),
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            BigButton(stringResource(R.string.btn_back_home), onHome, Modifier.fillMaxWidth())
         }
     }
 }

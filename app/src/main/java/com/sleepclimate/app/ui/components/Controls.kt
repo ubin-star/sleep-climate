@@ -1,7 +1,6 @@
 package com.sleepclimate.app.ui.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,27 +16,28 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sleepclimate.app.ui.theme.SC
 
-/** 차량 터치 기준 큰 버튼 (높이 72dp) */
+private val ButtonShape = RoundedCornerShape(16.dp)
+
+/** 주요 동작 버튼 — 화면당 하나만 강조색으로 */
 @Composable
 fun BigButton(
     text: String,
@@ -46,41 +46,53 @@ fun BigButton(
     color: Color = SC.Accent,
     enabled: Boolean = true
 ) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier.height(72.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = color,
-            contentColor = Color.White,
-            disabledContainerColor = SC.SurfaceHigh,
-            disabledContentColor = SC.TextSecondary
-        )
+    Box(
+        modifier
+            .height(68.dp)
+            .clip(ButtonShape)
+            .background(if (enabled) color else SC.SurfaceHigh)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 28.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Text(text, style = MaterialTheme.typography.labelLarge, fontSize = 22.sp)
+        Text(text, style = MaterialTheme.typography.labelLarge, color = if (enabled) Color.White else SC.TextTertiary)
     }
 }
 
+/** 보조 동작 버튼 — 테두리 없는 톤 버튼 */
 @Composable
 fun BigOutlinedButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    color: Color = SC.TextPrimary
+    color: Color = SC.TextPrimary,
+    icon: ImageVector? = null
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(72.dp),
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(2.dp, SC.Border),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = color)
+    Row(
+        modifier
+            .height(68.dp)
+            .clip(ButtonShape)
+            .background(SC.SurfaceHigh)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text, style = MaterialTheme.typography.labelLarge)
+        if (icon != null) LineIcon(icon, tint = color, size = 22.dp)
+        Text(text, style = MaterialTheme.typography.labelLarge, color = color)
     }
 }
 
-/** 선택 칩 한 줄 — 슬라이더 대신 큰 터치 영역 */
+/** 원형 뒤로 가기 버튼 */
+@Composable
+fun BackButton(onClick: () -> Unit) {
+    Box(
+        Modifier.size(56.dp).clip(CircleShape).background(SC.SurfaceHigh).clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) { LineIcon(LineIcons.Back, size = 26.dp) }
+}
+
+/** 선택 칩 한 줄 — 선택된 항목은 밝은 면으로 반전 */
 @Composable
 fun <T> ChoiceRow(
     options: List<Pair<T, String>>,
@@ -88,24 +100,21 @@ fun <T> ChoiceRow(
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         options.forEach { (value, label) ->
             val isSelected = value == selected
-            val bg by animateColorAsState(if (isSelected) SC.Accent else SC.SurfaceHigh, label = "chip")
+            val bg by animateColorAsState(if (isSelected) SC.TextPrimary else SC.SurfaceHigh, label = "chip")
+            val fg by animateColorAsState(if (isSelected) SC.Background else SC.TextSecondary, label = "chipText")
             Box(
                 Modifier
                     .weight(1f)
-                    .height(60.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .height(58.dp)
+                    .clip(RoundedCornerShape(14.dp))
                     .background(bg)
                     .clickable { onSelect(value) },
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    label,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (isSelected) Color.White else SC.TextPrimary
-                )
+                Text(label, style = MaterialTheme.typography.titleMedium, color = fg, fontWeight = FontWeight.Medium)
             }
         }
     }
@@ -126,8 +135,7 @@ fun Stepper(
             value,
             modifier = Modifier.weight(1f),
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.headlineLarge,
-            fontSize = 44.sp,
+            style = MaterialTheme.typography.displaySmall,
             color = valueColor
         )
         StepButton("+", onPlus)
@@ -137,59 +145,64 @@ fun Stepper(
 @Composable
 private fun StepButton(symbol: String, onClick: () -> Unit) {
     Box(
-        Modifier
-            .size(76.dp)
-            .clip(CircleShape)
-            .background(SC.SurfaceHigh)
-            .border(2.dp, SC.Border, CircleShape)
-            .clickable(onClick = onClick),
+        Modifier.size(72.dp).clip(CircleShape).background(SC.SurfaceHigh).clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(symbol, fontSize = 38.sp, fontWeight = FontWeight.Bold, color = SC.TextPrimary)
+        Text(symbol, fontSize = 34.sp, fontWeight = FontWeight.Light, color = SC.TextPrimary)
     }
 }
 
-/** 상단 상태 표시용 알약 모양 배지 */
+/** 상단 상태 표시 — 아이콘 + 짧은 텍스트, 테두리·배경 없음 */
 @Composable
-fun StatusPill(text: String, color: Color, modifier: Modifier = Modifier) {
-    Box(
-        modifier
-            .clip(RoundedCornerShape(50))
-            .background(color.copy(alpha = 0.14f))
-            .border(1.5.dp, color.copy(alpha = 0.6f), RoundedCornerShape(50))
-            .padding(horizontal = 18.dp, vertical = 10.dp)
-    ) {
-        Text(text, style = MaterialTheme.typography.labelMedium, color = color)
+fun StatusItem(icon: ImageVector, text: String, color: Color = SC.TextSecondary) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        LineIcon(icon, tint = color, size = 22.dp)
+        Text(text, style = MaterialTheme.typography.bodyLarge, color = color)
     }
 }
 
-/** 카드 컨테이너 */
+/** 면 컨테이너 — 기본은 테두리 없음, 강조가 필요할 때만 [accent] */
 @Composable
 fun Panel(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
-    borderColor: Color = SC.Border,
+    accent: Color? = null,
     content: @Composable () -> Unit
 ) {
-    val shape = RoundedCornerShape(24.dp)
+    val shape = RoundedCornerShape(20.dp)
     Box(
         modifier
             .clip(shape)
             .background(SC.Surface)
-            .border(1.5.dp, borderColor, shape)
+            .let { if (accent != null) it.border(1.dp, accent.copy(alpha = 0.5f), shape) else it }
             .let { if (onClick != null) it.clickable(onClick = onClick) else it }
             .padding(24.dp)
     ) { content() }
 }
 
-/** 라벨 + 큰 값 타일 */
+/** 작은 라벨 */
+@Composable
+fun Caption(text: String, modifier: Modifier = Modifier, color: Color = SC.TextSecondary) {
+    Text(text, style = MaterialTheme.typography.labelMedium, color = color, modifier = modifier)
+}
+
+/** 라벨 + 얇은 큰 값 */
 @Composable
 fun StatTile(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = SC.TextPrimary) {
     Panel(modifier) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(label, style = MaterialTheme.typography.labelMedium, color = SC.TextSecondary)
-            Text(value, style = MaterialTheme.typography.headlineMedium, color = valueColor)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Caption(label)
+            Text(value, style = MaterialTheme.typography.displaySmall, fontSize = 40.sp, color = valueColor)
         }
+    }
+}
+
+/** 라벨 + 값 (패널 없이) */
+@Composable
+fun InfoValue(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = SC.TextPrimary) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Caption(label)
+        Text(value, style = MaterialTheme.typography.headlineMedium, color = valueColor)
     }
 }
 
@@ -198,12 +211,15 @@ fun StatTile(label: String, value: String, modifier: Modifier = Modifier, valueC
 fun Section(title: String, modifier: Modifier = Modifier, trailing: String? = null, content: @Composable () -> Unit) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.Bottom) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = SC.TextSecondary, modifier = Modifier.weight(1f))
-            if (trailing != null) Text(trailing, style = MaterialTheme.typography.bodyMedium, color = SC.Accent)
+            Caption(title, Modifier.weight(1f))
+            if (trailing != null) Text(trailing, style = MaterialTheme.typography.bodyMedium, color = SC.TextSecondary)
         }
         content()
     }
 }
+
+/** 비활성 표현 */
+fun Modifier.dimmedIf(disabled: Boolean): Modifier = alpha(if (disabled) 0.35f else 1f)
 
 /**
  * 가로 와이드 화면(차량 중앙 디스플레이 전체 화면)이면 좌우 2분할,
@@ -220,12 +236,12 @@ fun AdaptiveSplit(
     BoxWithConstraints(modifier.fillMaxSize()) {
         if (maxWidth >= 900.dp) {
             Row(Modifier.fillMaxSize()) {
-                visual(Modifier.weight(1.1f).fillMaxHeight())
+                visual(Modifier.weight(1.15f).fillMaxHeight())
                 controls(Modifier.weight(1f).fillMaxHeight(), true)
             }
         } else {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                visual(Modifier.fillMaxWidth().height(340.dp))
+                visual(Modifier.fillMaxWidth().height(380.dp))
                 controls(Modifier.fillMaxWidth(), false)
             }
         }

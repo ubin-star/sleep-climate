@@ -11,24 +11,28 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/** 차량 디스플레이용 다크 팔레트 — 야간 차박 중 눈부심을 줄이는 어두운 배경 */
+/**
+ * 차량 디스플레이 팔레트 — 따뜻한 무채색 블랙 위에 포인트 색은 의미가 있을 때만 사용
+ * (냉방·난방·경고·주요 동작)
+ */
 object SC {
-    val Background = Color(0xFF0B0F14)
-    val Surface = Color(0xFF151B23)
-    val SurfaceHigh = Color(0xFF1E2630)
-    val Border = Color(0xFF2A3441)
-    val TextPrimary = Color(0xFFE6EDF3)
-    val TextSecondary = Color(0xFF8B949E)
-    val Accent = Color(0xFF2F81F7)
-    val Cool = Color(0xFF4FC3F7)
-    val Heat = Color(0xFFFF8A50)
-    val Ok = Color(0xFF3FB950)
-    val Warn = Color(0xFFD29922)
-    val Danger = Color(0xFFF85149)
-    val Night = Color(0xFF070A0E)
+    val Background = Color(0xFF0C0D0F)
+    val Surface = Color(0xFF16181B)
+    val SurfaceHigh = Color(0xFF202327)
+    val Divider = Color(0xFF2B2F34)
+    val TextPrimary = Color(0xFFF1F1EE)
+    val TextSecondary = Color(0xFF8E9298)
+    val TextTertiary = Color(0xFF5D6167)
+    val Accent = Color(0xFF5B8CFF)
+    val Cool = Color(0xFF63C7F5)
+    val Heat = Color(0xFFFF9E57)
+    val Ok = Color(0xFF7CCFA4)
+    val Warn = Color(0xFFE6B450)
+    val Danger = Color(0xFFFF6B5E)
+    val Night = Color(0xFF08090A)
 }
 
-/** 실내 온도를 색으로 — 추움(파랑) → 쾌적(초록) → 더움(주황·빨강) */
+/** 실내 온도를 색으로 — 추움(파랑) → 쾌적(민트) → 더움(주황·빨강) */
 fun temperatureColor(tempCelsius: Float?): Color {
     if (tempCelsius == null) return SC.TextSecondary
     return when {
@@ -50,22 +54,23 @@ private val colorScheme = darkColorScheme(
     onSurface = SC.TextPrimary,
     surfaceVariant = SC.SurfaceHigh,
     onSurfaceVariant = SC.TextSecondary,
-    outline = SC.Border,
+    outline = SC.Divider,
     error = SC.Danger
 )
 
-/** 운전석·뒷좌석 거리에서도 읽히도록 큰 글자 위주 */
+/** 큰 숫자는 얇게, 라벨은 작고 차분하게 — 순정 클러스터 계열의 위계 */
 private val typography = Typography(
-    displayLarge = TextStyle(fontSize = 88.sp, fontWeight = FontWeight.Bold, letterSpacing = (-2).sp),
-    displayMedium = TextStyle(fontSize = 64.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp),
-    headlineLarge = TextStyle(fontSize = 34.sp, fontWeight = FontWeight.Bold),
-    headlineMedium = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold),
-    titleLarge = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.SemiBold),
-    titleMedium = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold),
-    bodyLarge = TextStyle(fontSize = 20.sp),
-    bodyMedium = TextStyle(fontSize = 17.sp),
-    labelLarge = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold),
-    labelMedium = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium)
+    displayLarge = TextStyle(fontSize = 128.sp, fontWeight = FontWeight.Thin, letterSpacing = (-4).sp),
+    displayMedium = TextStyle(fontSize = 84.sp, fontWeight = FontWeight.ExtraLight, letterSpacing = (-2).sp),
+    displaySmall = TextStyle(fontSize = 52.sp, fontWeight = FontWeight.Light, letterSpacing = (-1).sp),
+    headlineLarge = TextStyle(fontSize = 30.sp, fontWeight = FontWeight.Medium),
+    headlineMedium = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.Normal),
+    titleLarge = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Medium),
+    titleMedium = TextStyle(fontSize = 19.sp, fontWeight = FontWeight.Normal),
+    bodyLarge = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Normal),
+    bodyMedium = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Normal),
+    labelLarge = TextStyle(fontSize = 19.sp, fontWeight = FontWeight.Medium),
+    labelMedium = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.2.sp)
 )
 
 @Composable
