@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,11 +36,14 @@ import com.sleepclimate.app.domain.model.RestSession
 import com.sleepclimate.app.domain.model.SessionPreset
 import com.sleepclimate.app.ui.components.AdaptiveSplit
 import com.sleepclimate.app.ui.components.BigButton
-import com.sleepclimate.app.ui.components.BigOutlinedButton
 import com.sleepclimate.app.ui.components.ChoiceRow
+import com.sleepclimate.app.ui.components.InfoValue
+import com.sleepclimate.app.ui.components.LineIcon
+import com.sleepclimate.app.ui.components.LineIcons
 import com.sleepclimate.app.ui.components.Section
-import com.sleepclimate.app.ui.components.Stepper
+import com.sleepclimate.app.ui.components.TempChevronControl
 import com.sleepclimate.app.ui.components.TemperatureDial
+import com.sleepclimate.app.ui.components.VehicleStatusBar
 import com.sleepclimate.app.ui.session.SessionViewModel
 import com.sleepclimate.app.ui.theme.SC
 import java.text.SimpleDateFormat
@@ -60,6 +64,7 @@ fun SetupScreen(
     onBack: () -> Unit
 ) {
     val vehicle by viewModel.vehicleState.collectAsStateWithLifecycle()
+    val simulation by viewModel.simulationEnabled.collectAsStateWithLifecycle()
     var target by remember { mutableFloatStateOf(preset.targetTempCelsius) }
     var range by remember { mutableFloatStateOf(preset.rangeCelsius) }
     var hours by remember { mutableIntStateOf(preset.durationHours) }
@@ -68,20 +73,16 @@ fun SetupScreen(
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.KOREAN) }
     val endTime = timeFormat.format(Date(System.currentTimeMillis() + hours * 3_600_000L))
 
-    Column(Modifier.fillMaxSize().background(SC.Background).padding(32.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            BigOutlinedButton(stringResource(R.string.btn_back), onBack)
-            Spacer(Modifier.padding(horizontal = 12.dp))
-            Text(stringResource(R.string.session_setup_title), style = MaterialTheme.typography.headlineLarge)
-        }
+    Column(Modifier.fillMaxSize().background(SC.Background).padding(horizontal = 40.dp, vertical = 28.dp)) {
+        VehicleStatusBar(vehicle, stringResource(R.string.session_setup_title), simulation, onBack)
         Spacer(Modifier.height(24.dp))
         AdaptiveSplit(
             visual = { modifier ->
                 Box(
-                    modifier.padding(end = 24.dp, bottom = 16.dp).clip(RoundedCornerShape(28.dp)).background(SC.Surface),
+                    modifier.padding(end = 32.dp, bottom = 12.dp).clip(RoundedCornerShape(28.dp)).background(SC.Surface),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
                         TemperatureDial(
                             currentTemp = vehicle.interiorTempCelsius,
                             targetTemp = target,
@@ -91,25 +92,26 @@ fun SetupScreen(
                             centerValue = "%.1f°".format(target),
                             centerValueIsCurrent = false,
                             caption = stringResource(R.string.setup_dial_caption_format, target - range, target + range),
-                            modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth(0.8f)
+                            modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(0.78f)
                         )
-                        Text(
-                            vehicle.interiorTempCelsius?.let { stringResource(R.string.current_vehicle_temp_format, it) }
-                                ?: stringResource(R.string.current_vehicle_temp_unavailable),
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        Text(stringResource(R.string.end_time_preview_format, endTime), style = MaterialTheme.typography.titleMedium, color = SC.Accent)
+                        Row(horizontalArrangement = Arrangement.spacedBy(56.dp)) {
+                            InfoValue(
+                                stringResource(R.string.label_interior),
+                                vehicle.interiorTempCelsius?.let { "%.1f°".format(it) } ?: "—"
+                            )
+                            InfoValue(stringResource(R.string.label_end_time), endTime)
+                        }
                     }
                 }
             },
             controls = { modifier, wide ->
                 Column(
                     modifier.then(if (wide) Modifier.verticalScroll(rememberScrollState()) else Modifier),
-                    verticalArrangement = Arrangement.spacedBy(26.dp)
+                    verticalArrangement = Arrangement.spacedBy(28.dp)
                 ) {
                     Section(stringResource(R.string.label_target_temp)) {
-                        Stepper(
-                            value = stringResource(R.string.temp_value_format, target),
+                        TempChevronControl(
+                            value = "%.1f°".format(target),
                             onMinus = { target = (target - 0.5f).coerceAtLeast(MIN_TARGET) },
                             onPlus = { target = (target + 0.5f).coerceAtMost(MAX_TARGET) }
                         )
@@ -132,21 +134,22 @@ fun SetupScreen(
                             selected = energy, onSelect = { energy = it }
                         )
                     }
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            LineIcon(LineIcons.Paw, tint = if (hasPet) SC.TextPrimary else SC.TextSecondary, size = 26.dp)
                             Text(stringResource(R.string.label_pet), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                            Switch(checked = hasPet, onCheckedChange = { hasPet = it })
+                            Switch(
+                                checked = hasPet,
+                                onCheckedChange = { hasPet = it },
+                                colors = SwitchDefaults.colors(
+                                    uncheckedTrackColor = SC.SurfaceHigh,
+                                    uncheckedBorderColor = SC.SurfaceHigh,
+                                    uncheckedThumbColor = SC.TextSecondary
+                                )
+                            )
                         }
                         if (hasPet) {
-                            Text(
-                                stringResource(R.string.pet_safety_notice),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = SC.Warn,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(SC.Warn.copy(alpha = 0.12f))
-                                    .padding(16.dp)
-                            )
+                            Text(stringResource(R.string.pet_safety_notice), style = MaterialTheme.typography.bodyMedium, color = SC.Warn)
                         }
                     }
                     BigButton(

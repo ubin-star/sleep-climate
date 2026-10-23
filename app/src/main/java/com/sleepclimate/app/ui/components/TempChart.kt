@@ -44,7 +44,7 @@ fun TempChart(
 
         // 허용 범위 띠
         drawRect(
-            SC.Ok.copy(alpha = 0.14f),
+            SC.Ok.copy(alpha = 0.08f),
             topLeft = Offset(chartLeft, yOf(rangeHigh)),
             size = Size(chartW, yOf(rangeLow) - yOf(rangeHigh))
         )
@@ -86,7 +86,7 @@ fun TempChart(
             lineTo(xOf(t0), chartH)
             close()
         }
-        drawPath(fill, Brush.verticalGradient(listOf(SC.Accent.copy(alpha = 0.35f), SC.Accent.copy(alpha = 0f)), 0f, chartH))
-        drawPath(line, SC.Accent, style = Stroke(5f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        drawPath(fill, Brush.verticalGradient(listOf(SC.TextPrimary.copy(alpha = 0.10f), SC.TextPrimary.copy(alpha = 0f)), 0f, chartH))
+        drawPath(line, SC.TextPrimary, style = Stroke(3f, cap = StrokeCap.Round, join = StrokeJoin.Round))
     }
 }

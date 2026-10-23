@@ -4,16 +4,19 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 온도계 몸체 -->
+    <!-- 온도 게이지 호 -->
     <path
-        android:fillColor="#FFE6EDF3"
-        android:pathData="M46,32 a6,6 0 0,1 6,6 v24 a10,10 0 1,1 -12,0 v-24 a6,6 0 0,1 6,-6 z" />
-    <!-- 온도계 눈금 -->
+        android:strokeColor="#FFF1F1EE"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M38.44,69.56 A22,22 0 1,1 69.56,69.56" />
+    <!-- 현재 온도 표시점 -->
     <path
-        android:fillColor="#FF2F81F7"
-        android:pathData="M44,44 h4 v20.5 a6,6 0 1,1 -4,0 z" />
+        android:fillColor="#FF7CCFA4"
+        android:pathData="M46.48,33.33 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" />
     <!-- 초승달 -->
     <path
-        android:fillColor="#FFD29922"
-        android:pathData="M66,32 a13,13 0 1,0 14,16 a10,10 0 1,1 -14,-16 z" />
+        android:fillColor="#FFF1F1EE"
+        android:pathData="M57,44 A10,10 0 1,0 64,58 A8,8 0 1,1 57,44 Z" />
 </vector>

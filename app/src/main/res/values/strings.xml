@@ -7,23 +7,30 @@
     <string name="status_checking">확인 중…</string>
     <string name="status_connected">차량 연결됨</string>
     <string name="status_disconnected">차량 연결 없음</string>
-    <string name="badge_full_control">⚡ 자동 제어 지원</string>
-    <string name="badge_read_only">📋 알림 모드</string>
-    <string name="badge_no_support">⚠ 차량 데이터 미지원</string>
-    <string name="badge_simulation">🧪 시뮬레이션</string>
-    <string name="battery_format">🔋 %1$d%%</string>
-    <string name="fuel_format">⛽ %1$d%%</string>
-    <string name="energy_unavailable">🔋 —</string>
-    <string name="park_status_parked">🅿 주차 중</string>
-    <string name="park_status_driving">🚗 주행 중</string>
-    <string name="park_status_unknown">🅿 —</string>
+    <string name="badge_full_control">자동 제어 지원</string>
+    <string name="badge_read_only">알림 모드</string>
+    <string name="badge_no_support">차량 데이터 미지원</string>
+    <string name="badge_simulation">시뮬레이션</string>
+    <string name="battery_format">%1$d%%</string>
+    <string name="fuel_format">%1$d%%</string>
+    <string name="energy_unavailable">—</string>
+    <string name="park_status_parked">주차 중</string>
+    <string name="park_status_driving">주행 중</string>
+    <string name="park_status_unknown">—</string>
     <string name="interior_short_format">실내 %1$.1f°C</string>
     <string name="exterior_short_format">외부 %1$.1f°C</string>
     <string name="last_updated_format">마지막 갱신 %1$s</string>
-    <string name="btn_back">← 뒤로</string>
+    <string name="btn_back">뒤로</string>
+    <string name="label_interior">실내</string>
+    <string name="label_end_time">예상 종료</string>
+    <string name="info_hvac">공조</string>
+    <string name="info_control">제어 방식</string>
+    <string name="running_title">휴식 중</string>
+    <string name="home_mode_full">공조 자동 제어 지원 차량</string>
+    <string name="home_mode_read_only">공조 제어 미지원 · 온도 이탈 시 알림</string>
 
     <!-- 홈 -->
-    <string name="home_question">오늘은 어떤 휴식인가요?</string>
+    <string name="home_question">휴식 모드</string>
     <string name="preset_summer">여름 차박</string>
     <string name="preset_winter">겨울 차박</string>
     <string name="preset_short">짧은 휴식</string>
@@ -48,7 +55,7 @@
     <string name="label_temp_range">허용 범위</string>
     <string name="label_duration">휴식 시간</string>
     <string name="label_energy_alert">배터리·연료 보호 기준</string>
-    <string name="label_pet">🐕 반려동물 동반</string>
+    <string name="label_pet">반려동물 동반</string>
     <string name="temp_value_format">%1$.1f°C</string>
     <string name="range_option_format">±%1$.1f°</string>
     <string name="duration_option_format">%1$d시간</string>
@@ -59,16 +66,16 @@
     <string name="setup_dial_caption_format">허용 %1$.1f ~ %2$.1f°C</string>
     <string name="current_vehicle_temp_format">현재 차량 실내 %1$.1f°C</string>
     <string name="current_vehicle_temp_unavailable">현재 차량 실내 온도: 지원 데이터 없음</string>
-    <string name="pet_safety_notice">⚠ 이 앱의 알림만으로 차량 내 반려동물의 안전을 확인할 수 없습니다. 반드시 직접 확인해 주세요.</string>
+    <string name="pet_safety_notice">이 앱의 알림만으로 차량 내 반려동물의 안전을 확인할 수 없습니다. 반드시 직접 확인해 주세요.</string>
     <string name="btn_confirm_session">세션 시작</string>
 
     <!-- 세션 진행 -->
     <string name="session_running_label">세션 진행 중</string>
     <string name="dial_label_current">현재 실내</string>
     <string name="running_dial_caption_format">목표 %1$.1f° · 허용 %2$.1f~%3$.1f°</string>
-    <string name="mode_full">⚡ 자동 제어 활성</string>
-    <string name="mode_read_only">📋 알림 모드</string>
-    <string name="mode_none">⚠ 제어 불가</string>
+    <string name="mode_full">자동 제어</string>
+    <string name="mode_read_only">알림 모드</string>
+    <string name="mode_none">제어 불가</string>
     <string name="hvac_status_format">공조 %1$s · 외부 %2$.1f°C</string>
     <string name="hvac_status_no_exterior">공조 %1$s</string>
     <string name="hvac_mode_off">꺼짐</string>
@@ -88,7 +95,7 @@
     <string name="control_status_timed_out">반영 미확인</string>
     <string name="control_status_not_supported">미지원</string>
     <string name="remaining_label">남은 시간</string>
-    <string name="btn_sleep_screen">🌙 수면 화면</string>
+    <string name="btn_sleep_screen">수면 화면</string>
     <string name="btn_view_alerts_format">알림 %1$d건</string>
     <string name="btn_view_alerts_empty">알림 없음</string>
     <string name="btn_end_session">세션 종료</string>
@@ -103,7 +110,7 @@
     <string name="no_alerts">발생한 알림이 없습니다.</string>
 
     <!-- 세션 결과 -->
-    <string name="result_title">좋은 휴식 되셨나요?</string>
+    <string name="result_title">휴식 리포트</string>
     <string name="session_time_range_format">%1$s ~ %2$s</string>
     <string name="stat_duration">휴식 시간</string>
     <string name="stat_avg_temp">평균 실내 온도</string>
@@ -142,8 +149,8 @@
     <string name="notification_session_title">SLEEP CLIMATE 세션 진행 중</string>
     <string name="notification_session_text">차량 온도를 모니터링하고 있습니다.</string>
     <string name="notification_action_end_session">세션 종료</string>
-    <string name="notification_title_temp">🌡 온도 알림</string>
-    <string name="notification_title_battery">🔋 배터리 부족</string>
-    <string name="notification_title_fuel">⛽ 연료 부족</string>
-    <string name="notification_title_connection">📡 차량 연결 알림</string>
+    <string name="notification_title_temp">온도 알림</string>
+    <string name="notification_title_battery">배터리 부족</string>
+    <string name="notification_title_fuel">연료 부족</string>
+    <string name="notification_title_connection">차량 연결 알림</string>
 </resources>

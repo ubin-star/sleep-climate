@@ -3,6 +3,7 @@ package com.sleepclimate.app.ui.components
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.sleepclimate.app.R
 import com.sleepclimate.app.data.vehicle.HvacMode
@@ -27,22 +28,19 @@ fun alertLabel(type: AlertType): Int = when (type) {
     AlertType.AUTO_CONTROL_STOPPED -> R.string.alert_label_auto_control_stopped
 }
 
-fun alertIcon(type: AlertType): String = when (type) {
-    AlertType.VEHICLE_DISCONNECTED -> "🔌"
-    AlertType.DATA_STALE           -> "⏱"
-    AlertType.COMMAND_REJECTED     -> "🚫"
-    AlertType.COMMAND_FAILED       -> "❌"
-    AlertType.BATTERY_LOW          -> "🔋"
-    AlertType.FUEL_LOW             -> "⛽"
-    AlertType.TEMP_OUT_OF_RANGE    -> "🌡"
-    AlertType.NOT_PARKED           -> "🚗"
-    AlertType.SESSION_ENDING_SOON  -> "⏰"
-    AlertType.PET_SAFETY_REMINDER  -> "🐾"
-    AlertType.AUTO_CONTROL_STOPPED -> "🛑"
+fun alertIcon(type: AlertType): ImageVector = when (type) {
+    AlertType.VEHICLE_DISCONNECTED, AlertType.DATA_STALE -> LineIcons.Link
+    AlertType.BATTERY_LOW, AlertType.FUEL_LOW            -> LineIcons.Battery
+    AlertType.TEMP_OUT_OF_RANGE                          -> LineIcons.Thermometer
+    AlertType.NOT_PARKED                                 -> LineIcons.Parking
+    AlertType.SESSION_ENDING_SOON                        -> LineIcons.Clock
+    AlertType.PET_SAFETY_REMINDER                        -> LineIcons.Paw
+    AlertType.COMMAND_REJECTED, AlertType.COMMAND_FAILED,
+    AlertType.AUTO_CONTROL_STOPPED                       -> LineIcons.Warning
 }
 
 fun alertColor(type: AlertType): Color = when (type) {
-    AlertType.SESSION_ENDING_SOON, AlertType.PET_SAFETY_REMINDER -> SC.Accent
+    AlertType.SESSION_ENDING_SOON, AlertType.PET_SAFETY_REMINDER -> SC.TextPrimary
     AlertType.TEMP_OUT_OF_RANGE, AlertType.DATA_STALE -> SC.Warn
     else -> SC.Danger
 }
