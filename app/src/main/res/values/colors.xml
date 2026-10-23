@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 배경 -->
+    <color name="bg_dark">#FF0D1117</color>
+    <color name="bg_card">#FF1C2128</color>
+
+    <!-- 텍스트 -->
+    <color name="text_primary">#FFE6EDF3</color>
+    <color name="text_secondary">#FF7D8590</color>
+
+    <!-- 강조색 -->
+    <color name="accent_blue">#FF2F81F7</color>
+    <color name="warning_yellow">#FFD29922</color>
+    <color name="error_red">#FFF85149</color>
+    <color name="success_green">#FF3FB950</color>
+</resources>
