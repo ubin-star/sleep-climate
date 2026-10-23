@@ -87,6 +87,14 @@ class SessionRepository {
         autoControlSuspended = true
     }
 
+    /** 휴식 연장 — 종료 시각을 늦추고 기상 준비 알림을 다시 받을 수 있게 한다 */
+    fun extendSession(extraMs: Long) {
+        val session = _currentSession.value ?: return
+        val base = maxOf(session.endTime, System.currentTimeMillis())
+        _currentSession.value = session.copy(endTime = base + extraMs)
+        endingSoonNotified = false
+    }
+
     fun endSession() {
         _currentSession.value = _currentSession.value?.copy(status = SessionStatus.ENDED)
     }

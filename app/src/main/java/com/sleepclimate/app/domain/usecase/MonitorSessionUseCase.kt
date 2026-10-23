@@ -9,7 +9,10 @@ import com.sleepclimate.app.domain.model.ControlEvent
 import com.sleepclimate.app.domain.model.ControlStatus
 import com.sleepclimate.app.domain.model.RestSession
 import com.sleepclimate.app.domain.model.SessionAlert
+import com.sleepclimate.app.domain.model.SessionPhase
 import com.sleepclimate.app.domain.model.VehicleState
+import com.sleepclimate.app.domain.model.effectiveRangeAt
+import com.sleepclimate.app.domain.model.phaseAt
 import com.sleepclimate.app.domain.model.VehicleSupportLevel
 import kotlinx.coroutines.flow.first
 
@@ -23,6 +26,7 @@ import kotlinx.coroutines.flow.first
  * - 명령 실패 MAX_RETRY 초과 시 알림으로 전환, 더 이상 재시도 안 함
  * - 배터리·연료가 알림 기준 이하이면 공조를 끄고 이번 세션의 자동 제어 중단
  * - 주차 상태 아닐 때 제어 차단
+ * - 기상 단계(종료 전 최대 10분)에는 허용 범위를 절반으로 좁혀 목표 온도로 미리 맞춤
  */
 class MonitorSessionUseCase(
     private val vehicleRepo: VehicleRepository,
@@ -30,9 +34,6 @@ class MonitorSessionUseCase(
 ) {
 
     companion object {
-        /** 세션 종료 X분 전부터 SESSION_ENDING_SOON 알림 발송 */
-        private const val ENDING_SOON_THRESHOLD_MS = 5 * 60 * 1000L // 5분
-
         /** 반려동물 안전 확인 알림 주기 */
         private const val PET_REMINDER_INTERVAL_MS = 30 * 60 * 1000L // 30분
 
@@ -79,15 +80,16 @@ class MonitorSessionUseCase(
         // 4. 배터리/연료 경고
         val energyLow = checkEnergyLevel(state, session.energyAlertPercent)
 
-        // 5. 세션 종료 5분 전 알림 (한 번만)
-        val remaining = session.endTime - System.currentTimeMillis()
-        if (remaining in 0L..ENDING_SOON_THRESHOLD_MS && !sessionRepo.endingSoonNotified) {
+        // 5. 기상 단계 진입 알림 (한 번만) — 이후 허용 범위를 좁혀 목표 온도로 미리 맞춘다
+        val now = System.currentTimeMillis()
+        if (session.phaseAt(now) == SessionPhase.WAKING && !sessionRepo.endingSoonNotified) {
             sessionRepo.addAlert(SessionAlert(
                 type = AlertType.SESSION_ENDING_SOON,
-                message = "세션 종료까지 5분 미만 남았습니다."
+                message = "기상 준비를 시작합니다. 실내를 목표 온도 ${session.targetTempCelsius}°C에 맞춥니다."
             ))
             sessionRepo.markEndingSoonNotified()
         }
+        val range = session.effectiveRangeAt(now)
 
         // 6. 반려동물 안전 확인 알림 (30분 주기, hasPet 세션 한정)
         if (session.hasPet) {
@@ -100,10 +102,10 @@ class MonitorSessionUseCase(
         // 8. 온도 범위 관리
         val currentTemp = state.interiorTempCelsius ?: return
         when (state.supportLevel) {
-            VehicleSupportLevel.FULL -> controlClimate(session, state, currentTemp, energyLow)
+            VehicleSupportLevel.FULL -> controlClimate(session, range, state, currentTemp, energyLow)
             VehicleSupportLevel.READ_ONLY, VehicleSupportLevel.NONE -> {
                 // 읽기만 가능 → 알림으로 안내
-                if (currentTemp > session.tempRangeHigh || currentTemp < session.tempRangeLow) {
+                if (currentTemp !in range) {
                     sessionRepo.addAlert(SessionAlert(
                         type = AlertType.TEMP_OUT_OF_RANGE,
                         message = "실내 온도 ${currentTemp}°C — 설정 범위를 벗어났습니다. 공조를 확인해 주세요."
@@ -116,6 +118,7 @@ class MonitorSessionUseCase(
 
     private suspend fun controlClimate(
         session: RestSession,
+        range: ClosedFloatingPointRange<Float>,
         state: VehicleState,
         currentTemp: Float,
         energyLow: Boolean
@@ -132,7 +135,7 @@ class MonitorSessionUseCase(
             return
         }
 
-        val desired = desiredMode(session, state, currentTemp) ?: return
+        val desired = desiredMode(session.targetTempCelsius, range, state, currentTemp) ?: return
 
         // 같은 명령이 아직 반영 확인 대기 중이면 재전송하지 않는다
         val pending = sessionRepo.controlEvents.value.lastOrNull { it.status == ControlStatus.PENDING }
@@ -149,13 +152,18 @@ class MonitorSessionUseCase(
         sendCommand(desired, session.targetTempCelsius)
     }
 
-    private fun desiredMode(session: RestSession, state: VehicleState, temp: Float): HvacMode? {
+    private fun desiredMode(
+        target: Float,
+        range: ClosedFloatingPointRange<Float>,
+        state: VehicleState,
+        temp: Float
+    ): HvacMode? {
         val mode = if (state.isHvacOn == true) state.hvacMode else HvacMode.OFF
         return when {
-            temp > session.tempRangeHigh && mode != HvacMode.COOLING -> HvacMode.COOLING
-            temp < session.tempRangeLow && mode != HvacMode.HEATING  -> HvacMode.HEATING
-            mode == HvacMode.COOLING && temp <= session.targetTempCelsius -> HvacMode.OFF
-            mode == HvacMode.HEATING && temp >= session.targetTempCelsius -> HvacMode.OFF
+            temp > range.endInclusive && mode != HvacMode.COOLING -> HvacMode.COOLING
+            temp < range.start && mode != HvacMode.HEATING        -> HvacMode.HEATING
+            mode == HvacMode.COOLING && temp <= target -> HvacMode.OFF
+            mode == HvacMode.HEATING && temp >= target -> HvacMode.OFF
             else -> null
         }
     }
