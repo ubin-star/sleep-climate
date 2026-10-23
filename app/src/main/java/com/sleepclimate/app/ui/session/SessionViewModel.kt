@@ -104,6 +104,11 @@ class SessionViewModel(
     /**
      * 세션 즉시 종료 (사용자가 언제든 종료 가능)
      */
+    /** 기상 화면의 "10분 더 쉬기" */
+    fun extendSession(minutes: Int) {
+        sessionRepository.extendSession(minutes * 60_000L)
+    }
+
     fun endSession() {
         monitorJob?.cancel()
         monitorJob = null

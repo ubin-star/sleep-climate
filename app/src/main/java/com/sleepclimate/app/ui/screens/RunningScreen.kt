@@ -45,7 +45,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sleepclimate.app.R
 import com.sleepclimate.app.data.vehicle.HvacMode
 import com.sleepclimate.app.domain.model.SessionAlert
+import com.sleepclimate.app.domain.model.SessionPhase
 import com.sleepclimate.app.domain.model.SessionStatus
+import com.sleepclimate.app.domain.model.effectiveRangeAt
+import com.sleepclimate.app.domain.model.phaseAt
+import com.sleepclimate.app.domain.model.wakeProgressAt
+import com.sleepclimate.app.ui.components.PhaseTimeline
 import com.sleepclimate.app.domain.model.VehicleState
 import com.sleepclimate.app.domain.model.VehicleSupportLevel
 import com.sleepclimate.app.ui.components.AdaptiveSplit
@@ -75,6 +80,10 @@ import java.util.concurrent.TimeUnit
 /** 마지막 터치 후 이 시간이 지나면 수면 화면으로 어둡게 전환 */
 private const val AUTO_DIM_MS = 30_000L
 
+/** 종료 시각 이후 기상 화면을 유지하는 최대 시간 */
+private const val WAKE_GRACE_MS = 5 * 60_000L
+private const val SNOOZE_MINUTES = 10
+
 /**
  * 세션 진행 — 자는 동안 앱이 공조를 관리하는 모습을 보여주고, 필요할 때만 깨운다
  */
@@ -98,10 +107,16 @@ fun RunningScreen(
     val current = session ?: return
     val remainingMs = (current.endTime - now).coerceAtLeast(0L)
 
+    val phase = current.phaseAt(now)
+    val range = current.effectiveRangeAt(now)
+    val wakeTime = remainingMs == 0L && current.status == SessionStatus.RUNNING
+
     LaunchedEffect(Unit) {
         while (true) {
             now = System.currentTimeMillis()
-            if (current.endTime - now <= 0) viewModel.endSession()
+            // 기상 화면에서 응답이 없으면 일정 시간 뒤 자동 종료 — 공조를 무기한 관리하지 않는다
+            val s = viewModel.currentSession.value
+            if (s != null && s.status == SessionStatus.RUNNING && now - s.endTime > WAKE_GRACE_MS) viewModel.endSession()
             delay(1_000L)
         }
     }
@@ -177,12 +192,12 @@ fun RunningScreen(
                         TemperatureDial(
                             currentTemp = vehicle.interiorTempCelsius,
                             targetTemp = current.targetTempCelsius,
-                            rangeLow = current.tempRangeLow,
-                            rangeHigh = current.tempRangeHigh,
+                            rangeLow = range.start,
+                            rangeHigh = range.endInclusive,
                             centerLabel = stringResource(R.string.dial_label_current),
                             caption = stringResource(
                                 R.string.running_dial_caption_format,
-                                current.targetTempCelsius, current.tempRangeLow, current.tempRangeHigh
+                                current.targetTempCelsius, range.start, range.endInclusive
                             ),
                             modifier = Modifier.widthIn(max = 400.dp).fillMaxWidth(0.72f)
                         )
@@ -199,6 +214,10 @@ fun RunningScreen(
                                     }
                                 )
                             )
+                        }
+                        PhaseTimeline(current, now)
+                        if (phase == SessionPhase.WAKING) {
+                            Caption(stringResource(R.string.phase_waking_detail), color = SC.Heat)
                         }
                         controls.lastOrNull()?.let { last ->
                             Caption(
@@ -228,8 +247,17 @@ fun RunningScreen(
             )
         }
 
-        AnimatedVisibility(dimmed, enter = fadeIn(), exit = fadeOut()) {
-            SleepOverlay(vehicle, remainingMs, alerts.lastOrNull(), ambient) { dimmed = false }
+        AnimatedVisibility(dimmed && !wakeTime, enter = fadeIn(), exit = fadeOut()) {
+            SleepOverlay(vehicle, remainingMs, alerts.lastOrNull(), ambient, current.wakeProgressAt(now)) { dimmed = false }
+        }
+        AnimatedVisibility(wakeTime, enter = fadeIn(tween(1500)), exit = fadeOut()) {
+            WakeOverlay(
+                vehicle = vehicle,
+                targetTemp = current.targetTempCelsius,
+                minutesUntilAutoEnd = ((WAKE_GRACE_MS - (now - current.endTime)) / 60_000L + 1).toInt().coerceAtLeast(1),
+                onSnooze = { viewModel.extendSession(SNOOZE_MINUTES); dimmed = true },
+                onReport = { viewModel.endSession() }
+            )
         }
     }
 
@@ -286,12 +314,21 @@ private fun SleepOverlay(
     remainingMs: Long,
     latestAlert: SessionAlert?,
     ambient: Color,
+    wakeProgress: Float,
     onWake: () -> Unit
 ) {
     Box(
         Modifier
             .fillMaxSize()
             .background(SC.Night)
+            // 기상 단계: 화면 아래에서부터 일출처럼 따뜻한 빛이 서서히 차오른다
+            .background(
+                Brush.verticalGradient(
+                    0f to Color.Transparent,
+                    0.55f to SC.Heat.copy(alpha = 0.06f * wakeProgress),
+                    1f to SC.Heat.copy(alpha = 0.42f * wakeProgress)
+                )
+            )
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onWake),
         contentAlignment = Alignment.Center
     ) {
@@ -319,6 +356,41 @@ private fun SleepOverlay(
             Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp),
             color = SC.TextTertiary.copy(alpha = 0.6f)
         )
+    }
+}
+
+/** 기상 화면 — 휴식 종료 시각. 더 쉬거나 리포트로 이동 */
+@Composable
+private fun WakeOverlay(
+    vehicle: VehicleState,
+    targetTemp: Float,
+    minutesUntilAutoEnd: Int,
+    onSnooze: () -> Unit,
+    onReport: () -> Unit
+) {
+    val clock = remember { SimpleDateFormat("HH:mm", Locale.KOREAN) }
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(SC.Night)
+            .background(Brush.verticalGradient(0f to Color.Transparent, 0.5f to SC.Heat.copy(alpha = 0.06f), 1f to SC.Heat.copy(alpha = 0.32f)))
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text(clock.format(Date()), style = MaterialTheme.typography.displayLarge, color = SC.TextPrimary)
+            Text(stringResource(R.string.wake_title), style = MaterialTheme.typography.headlineLarge)
+            Text(
+                vehicle.interiorTempCelsius?.let { stringResource(R.string.wake_message_format, it, targetTemp) } ?: "",
+                style = MaterialTheme.typography.titleLarge, color = SC.TextSecondary
+            )
+            Spacer(Modifier.height(24.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                BigOutlinedButton(stringResource(R.string.btn_snooze), onSnooze, Modifier.widthIn(min = 260.dp), icon = LineIcons.Moon)
+                BigButton(stringResource(R.string.btn_view_report), onReport, Modifier.widthIn(min = 260.dp))
+            }
+            Caption(stringResource(R.string.wake_auto_end_format, minutesUntilAutoEnd), color = SC.TextTertiary)
+        }
     }
 }
 

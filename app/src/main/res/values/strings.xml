@@ -26,6 +26,17 @@
     <string name="info_hvac">공조</string>
     <string name="info_control">제어 방식</string>
     <string name="running_title">휴식 중</string>
+    <string name="phase_falling_asleep">잠들기</string>
+    <string name="phase_sleeping">수면</string>
+    <string name="phase_waking">기상 준비</string>
+    <string name="phase_waking_detail">깨어날 때 쾌적하도록 목표 온도로 맞추는 중</string>
+    <string name="wake_title">휴식 시간이 끝났습니다</string>
+    <string name="wake_message_format">실내 %1$.1f°C · 목표 %2$.1f°C</string>
+    <string name="wake_auto_end_format">%1$d분 뒤 자동으로 종료되고 공조 관리가 멈춥니다</string>
+    <string name="btn_snooze">10분 더 쉬기</string>
+    <string name="btn_view_report">리포트 보기</string>
+    <string name="duration_demo">시연 3분</string>
+    <string name="duration_minutes_format">%1$d분</string>
     <string name="home_mode_full">공조 자동 제어 지원 차량</string>
     <string name="home_mode_read_only">공조 제어 미지원 · 온도 이탈 시 알림</string>
 
@@ -137,7 +148,7 @@
     <string name="alert_label_fuel_low">연료 부족</string>
     <string name="alert_label_temp_out_of_range">온도 범위 이탈</string>
     <string name="alert_label_not_parked">주행 중 감지</string>
-    <string name="alert_label_session_ending_soon">세션 종료 예고</string>
+    <string name="alert_label_session_ending_soon">기상 준비</string>
     <string name="alert_label_pet_safety_reminder">반려동물 확인</string>
     <string name="alert_label_auto_control_stopped">자동 제어 중단</string>
 

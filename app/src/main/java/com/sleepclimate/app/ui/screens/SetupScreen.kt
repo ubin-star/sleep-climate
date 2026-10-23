@@ -52,6 +52,7 @@ import java.util.Locale
 
 private const val MIN_TARGET = 16f
 private const val MAX_TARGET = 30f
+private const val DEMO_MINUTES = 3
 
 /**
  * 세션 설정 — 프리셋 값으로 채워진 상태에서 시작 버튼만 누르면 된다
@@ -67,11 +68,14 @@ fun SetupScreen(
     val simulation by viewModel.simulationEnabled.collectAsStateWithLifecycle()
     var target by remember { mutableFloatStateOf(preset.targetTempCelsius) }
     var range by remember { mutableFloatStateOf(preset.rangeCelsius) }
-    var hours by remember { mutableIntStateOf(preset.durationHours) }
+    var minutes by remember { mutableIntStateOf(preset.durationHours * 60) }
     var energy by remember { mutableIntStateOf(preset.energyAlertPercent) }
     var hasPet by remember { mutableStateOf(false) }
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.KOREAN) }
-    val endTime = timeFormat.format(Date(System.currentTimeMillis() + hours * 3_600_000L))
+    val endTime = timeFormat.format(Date(System.currentTimeMillis() + minutes * 60_000L))
+    // 시연 모드에서만 잠들기 → 수면 → 기상 전체 흐름을 몇 분 안에 볼 수 있는 짧은 세션 제공
+    val durationOptions = (if (simulation) listOf(DEMO_MINUTES to stringResource(R.string.duration_demo)) else emptyList()) +
+        listOf(1, 2, 4, 6, 8, 10).map { it * 60 to stringResource(R.string.duration_option_format, it) }
 
     Column(Modifier.fillMaxSize().background(SC.Background).padding(horizontal = 40.dp, vertical = 28.dp)) {
         VehicleStatusBar(vehicle, stringResource(R.string.session_setup_title), simulation, onBack)
@@ -123,10 +127,7 @@ fun SetupScreen(
                         )
                     }
                     Section(stringResource(R.string.label_duration), trailing = stringResource(R.string.end_time_preview_format, endTime)) {
-                        ChoiceRow(
-                            options = listOf(1, 2, 4, 6, 8, 10).map { it to stringResource(R.string.duration_option_format, it) },
-                            selected = hours, onSelect = { hours = it }
-                        )
+                        ChoiceRow(options = durationOptions, selected = minutes, onSelect = { minutes = it })
                     }
                     Section(stringResource(R.string.label_energy_alert), trailing = stringResource(R.string.energy_preview_format, energy)) {
                         ChoiceRow(
@@ -161,7 +162,7 @@ fun SetupScreen(
                                     targetTempCelsius = target,
                                     tempRangeLow = target - range,
                                     tempRangeHigh = target + range,
-                                    endTime = System.currentTimeMillis() + hours * 3_600_000L,
+                                    endTime = System.currentTimeMillis() + minutes * 60_000L,
                                     energyAlertPercent = energy,
                                     hasPet = hasPet
                                 )
