@@ -27,6 +27,7 @@ object LineIcons {
     val Bell = icon("M6.5 16v-5a5.5 5.5 0 0 1 11 0v5l1.5 2h-14z M10 20.5a2 2 0 0 0 4 0")
     val Back = icon("M15 5l-7 7 7 7")
     val Forward = icon("M9 5l7 7-7 7")
+    val Mic = icon("M12 3.5a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0v-5a3 3 0 0 1 3-3z M5.5 11.5a6.5 6.5 0 0 0 13 0 M12 18v3 M9 21h6")
     val Warning = icon("M12 3.5l9.5 16.5h-19z M12 10v4.5 M12 17.3v.2")
     val Clock = icon("M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z M12 7.5V12l3 2")
     val Thermometer = icon("M10 4.5a2 2 0 0 1 4 0v9.3a4 4 0 1 1-4 0z M12 9v7")

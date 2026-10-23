@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -100,7 +101,23 @@ fun <T> ChoiceRow(
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    // 좁은 화면에서는 한 줄에 4개씩 — 글자가 줄바꿈되지 않도록
+    val perRow = if (isCompactWidth()) 4 else options.size
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        options.chunked(perRow).forEach { row ->
+            ChoiceRowLine(row, perRow, selected, onSelect)
+        }
+    }
+}
+
+@Composable
+private fun <T> ChoiceRowLine(
+    options: List<Pair<T, String>>,
+    slots: Int,
+    selected: T,
+    onSelect: (T) -> Unit
+) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         options.forEach { (value, label) ->
             val isSelected = value == selected
             val bg by animateColorAsState(if (isSelected) SC.TextPrimary else SC.SurfaceHigh, label = "chip")
@@ -114,9 +131,10 @@ fun <T> ChoiceRow(
                     .clickable { onSelect(value) },
                 contentAlignment = Alignment.Center
             ) {
-                Text(label, style = MaterialTheme.typography.titleMedium, color = fg, fontWeight = FontWeight.Medium)
+                Text(label, style = MaterialTheme.typography.titleMedium, color = fg, fontWeight = FontWeight.Medium, maxLines = 1)
             }
         }
+        repeat(slots - options.size) { Box(Modifier.weight(1f)) }
     }
 }
 
@@ -192,7 +210,13 @@ fun StatTile(label: String, value: String, modifier: Modifier = Modifier, valueC
     Panel(modifier) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Caption(label)
-            Text(value, style = MaterialTheme.typography.displaySmall, fontSize = 40.sp, color = valueColor)
+            Text(
+                value,
+                style = MaterialTheme.typography.displaySmall,
+                fontSize = if (isCompactWidth()) 28.sp else 40.sp,
+                color = valueColor,
+                maxLines = 1
+            )
         }
     }
 }
@@ -236,14 +260,24 @@ fun AdaptiveSplit(
     BoxWithConstraints(modifier.fillMaxSize()) {
         if (maxWidth >= 900.dp) {
             Row(Modifier.fillMaxSize()) {
-                visual(Modifier.weight(1.15f).fillMaxHeight())
+                visual(Modifier.weight(1.15f).fillMaxHeight().padding(end = 32.dp, bottom = 12.dp))
                 controls(Modifier.weight(1f).fillMaxHeight(), true)
             }
         } else {
+            val visualHeight = if (maxWidth < 600.dp) 300.dp else 380.dp
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                visual(Modifier.fillMaxWidth().height(380.dp))
-                controls(Modifier.fillMaxWidth(), false)
+                visual(Modifier.fillMaxWidth().height(visualHeight).padding(bottom = 20.dp))
+                controls(Modifier.fillMaxWidth().padding(bottom = 24.dp), false)
             }
         }
     }
 }
+
+/** 폭이 좁은 화면(폰·분할 화면)인지 */
+@Composable
+fun isCompactWidth(): Boolean = LocalConfiguration.current.screenWidthDp < 760
+
+/** 화면 바깥 여백 — 차량 와이드 화면은 넉넉하게, 좁은 화면은 촘촘하게 */
+@Composable
+fun Modifier.screenPadding(): Modifier =
+    if (isCompactWidth()) padding(horizontal = 18.dp, vertical = 12.dp) else padding(horizontal = 40.dp, vertical = 28.dp)

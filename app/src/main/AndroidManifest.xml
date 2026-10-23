@@ -25,8 +25,24 @@
     <!-- 세션 중 CPU/화면 절전 방지 -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <!-- TODO: Vehicle SDK 공조 제어 권한 - 실제 권한명은 SDK 문서 확인 후 추가 -->
-    <!-- <uses-permission android:name="android.car.permission.CONTROL_CAR_CLIMATE" /> -->
+    <!-- Pleos Vehicle SDK 권한 (Pleos App Market 승인 범위 내에서 사용) -->
+    <uses-permission android:name="pleos.car.permission.CAR_CLIMATE" />
+    <uses-permission android:name="pleos.car.permission.CONTROL_CAR_CLIMATE" />
+    <uses-permission android:name="pleos.car.permission.CAR_ENERGY" />
+    <uses-permission android:name="pleos.car.permission.CAR_DRIVE" />
+
+    <!-- 음성 명령 (Pleos SpeechToText / Android SpeechRecognizer) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Pleos 음성 서비스가 없을 때 쓰는 Android 기본 음성 엔진 조회 -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
 
     <application
         android:name=".SleepClimateApp"

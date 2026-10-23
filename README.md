@@ -65,8 +65,11 @@ Pleos Connect의 2앱 분할 화면처럼 폭이 좁아지면 위아래 배치�
 
 ### APK 설치
 
-- APK 위치: [`apk/SleepClimate_SleepClimate_release.apk`](apk/SleepClimate_SleepClimate_release.apk)
-- 설치: `adb install apk/SleepClimate_SleepClimate_release.apk`
+- APK 위치: [`apk/김현중_SleepClimate_release.apk`](apk/김현중_SleepClimate_release.apk) (개인 참가 — 성명_앱이름_release)
+- PC에서 설치: `adb install apk/김현중_SleepClimate_release.apk`
+- 폰에서 설치: APK 파일을 폰으로 옮긴 뒤 파일 앱에서 열기 → "출처를 알 수 없는 앱 설치 허용" → 설치
+
+> 일반 폰·에뮬레이터에는 Pleos 차량 서비스가 없으므로 앱이 이를 감지해 **자동으로 시뮬레이션 모드**로 실행합니다. 음성 명령·안내는 Pleos 음성 서비스가 없으면 폰의 기본 음성 엔진(Google 음성 인식·TTS)으로 동작합니다.
 
 ### 소스 빌드
 
@@ -83,7 +86,7 @@ Pleos Connect의 2앱 분할 화면처럼 폭이 좁아지면 위아래 배치�
 
 ### 시연 방법
 
-1. 앱 실행 → 홈 하단 **🧪 자동 제어 시뮬레이션** 켜기 → 시나리오 선택 (여름 밤 30°C / 겨울 밤 -3°C / 배터리 부족)
+1. 앱 실행 → 홈 하단 **자동 제어 시뮬레이션** 켜기(Pleos 서비스가 없는 기기는 자동으로 켜짐) → 시나리오 선택 (여름 밤 30°C / 겨울 밤 -3°C / 배터리 부족)
 2. **여름 차박** 카드 → 휴식 시간 **시연 3분** 선택 → **세션 시작** (시연 3분은 시뮬레이션 모드에서만 표시)
 3. 실내 온도가 허용 범위를 넘으면 냉방이 자동으로 켜지고(유선 애니메이션), 목표 온도에 도달하면 꺼집니다.
 4. 30초 뒤 수면 화면으로 전환 → 종료 45초 전 기상 준비(일출 화면) → 종료 시 기상 화면
@@ -97,25 +100,49 @@ Pleos Connect의 2앱 분할 화면처럼 폭이 좁아지면 위아래 배치�
 
 | 항목 | 내용 |
 |------|------|
-| 테스트 기기 | Android Emulator (API 36), 해상도 2560×1440 가로 / 240dpi로 Devbox 화면 재현 |
+| 테스트 기기 | Android Emulator (API 36) — 2560×1440 가로 240dpi(Devbox 화면 재현), 1080×2400 세로(폰) |
 | 최소 사양 | Android API 28 이상 (Pleos Connect 요구사항) |
-| 권한 | 알림(POST_NOTIFICATIONS, Android 13+) — 첫 실행 시 요청 |
-| 차량 데이터 | 기본 모드: Mock 차량 데이터(알림 모드) / 시뮬레이션 모드: 가상 차량(자동 제어) |
-| 단위 테스트 | 22개 — 자동 제어 규칙, 기상 단계, 알림 생성·쿨다운, 온도 시뮬레이터 |
+| 권한 | Pleos 차량 권한(CAR_CLIMATE·CONTROL_CAR_CLIMATE·CAR_ENERGY·CAR_DRIVE), 알림, 마이크(음성 명령 시) |
+| 차량 데이터 | Pleos Connect 차량·에뮬레이터: Vehicle SDK 실제 데이터 / 그 외 기기: 시뮬레이션 자동 전환 |
+| 단위 테스트 | 28개 — 자동 제어 규칙, 기상 단계, 알림·쿨다운, 음성 명령 해석, 온도 시뮬레이터 |
+
+Pleos Connect Emulator에서 차량 권한이 거부되면 SDK가 `need Permission`을 반환하므로, 개발 환경에서는 권한을 부여한 뒤 실행합니다.
+
+```bash
+adb shell pm grant com.sleepclimate.app pleos.car.permission.CAR_CLIMATE
+adb shell pm grant com.sleepclimate.app pleos.car.permission.CONTROL_CAR_CLIMATE
+adb shell pm grant com.sleepclimate.app pleos.car.permission.CAR_ENERGY
+adb shell pm grant com.sleepclimate.app pleos.car.permission.CAR_DRIVE
+```
 
 ---
 
 ## Pleos Connect SDK 연동 현황
 
-| 기능 | Vehicle SDK | 앱 동작 |
-|------|-------------|---------|
-| 실내·외부 온도, 공조 상태 조회 | Vehicle State | 연동 지점 구현(`VehicleRepository`), 현재 Mock 데이터 |
-| 배터리·연료, 주차(기어) 상태 | Vehicle State | 연동 지점 구현, 현재 Mock 데이터 |
-| 공조 켜기/끄기·목표 온도 설정 | Vehicle Control (공개 예정) | 미지원 시 **알림 모드**로 자동 전환, 시뮬레이션으로 로직 시연 |
+사용 SDK (Maven `https://nexus-playground.pleos.ai/repository/maven-releases/`)
 
-- 지원 여부는 `checkSupportLevel()`로 먼저 확인하고(SDK의 `checkXXXCapabilities` 대응), **확인된 기능만 화면에 노출**합니다.
-- 공조 제어가 지원되지 않는 차량에서는 자동 제어를 주장하지 않고, 온도 이탈 시 알림과 수동 조작 안내를 제공합니다.
-- SDK 저장소 좌표 확인 후 `VehicleRepository`의 TODO 지점만 교체하면 앱의 나머지 코드는 그대로 동작합니다.
+| SDK | 버전 | 앱에서 쓰는 기능 |
+|-----|------|------------------|
+| Vehicle | 2.3.2 | 실내 온도 `getHvacTemperatureCurrent`, 설정 온도 `getHvacTemperature`, 공조 상태 `getHvacPowerState`·`getHvacAcState`, 공조 제어 `setHvacPower`·`setHvacAc`·`setHvacAuto`·`setHvacTemperature`, 배터리 `getEvBatteryStateOfCharge`, 연료 `getFuelPercent`, 기어 `getCurrentGearSelectionState`(주차 판단) |
+| SpeechToText | 3.3.1 | 음성 명령 인식 (HYBRID 모드, 한국어) |
+| TextToSpeech | 3.3.1 | 음성 안내 (휴식 시작, 위험 알림, 기상, 명령 응답) |
+
+- 지원 여부는 `checkHvacTemperatureCurrentCapabilities`·`checkHvacPowerCapabilities`·`checkHvacTemperatureCapabilities`로 먼저 확인하고, **확인된 기능만 활성화**합니다 (읽기만 가능하면 알림 모드, 제어까지 가능하면 자동 제어).
+- 모든 SDK 호출에 제한 시간을 두어, 차량 서비스가 응답하지 않으면 '데이터 없음'으로 처리하고 성공으로 표시하지 않습니다.
+- 구현: [`PleosVehicleRepository`](app/src/main/java/com/sleepclimate/app/data/vehicle/PleosVehicleRepository.kt), [`SpeechEngines`](app/src/main/java/com/sleepclimate/app/voice/SpeechEngines.kt)
+
+### 음성 명령·안내
+
+화면 오른쪽 위 마이크 버튼을 누르고 말하면 됩니다.
+
+| 말하기 예 | 동작 |
+|-----------|------|
+| "여름 차박 시작해줘" / "추워서 이제 잘게" / "낮잠 좀 잘래" | 상황에 맞는 프리셋으로 바로 휴식 시작 (설정 화면 생략) |
+| "22도로 맞춰줘" / "온도 좀 올려줘" / "너무 더워" | 휴식 중 목표 온도 변경 (±0.5°C) |
+| "지금 몇 도야" / "남은 시간 알려줘" / "배터리 얼마나 남았어" | 음성으로 상태 안내 |
+| "10분만 더 잘게" / "휴식 끝내줘" / "화면 어둡게 해줘" | 연장 / 종료 / 수면 화면 |
+
+음성 안내는 휴식 시작, 기상, 그리고 **깨워야 하는 알림**(배터리 부족·자동 제어 중단·주행 감지·연결 끊김·온도 이탈 알림 모드)에서만 나옵니다. 자동 제어가 정상 동작할 때는 수면을 방해하지 않도록 조용히 둡니다.
 
 ## 기술 구조
 
@@ -129,8 +156,10 @@ ViewModel (HomeViewModel, SessionViewModel)
 Domain  MonitorSessionUseCase — 자동 제어 규칙 · 알림 · 반영 확인 · 에너지 보호
         │
 Data    SwitchableVehicleRepository
-         ├─ VehicleRepository           ← Pleos Vehicle SDK 연동 지점
-         └─ SimulatedVehicleRepository  ← CabinThermalSimulator (시연용)
+         ├─ PleosVehicleRepository      ← Pleos Vehicle SDK 2.3.2
+         └─ SimulatedVehicleRepository  ← CabinThermalSimulator (시연용, 차량 서비스가 없으면 자동 전환)
+Voice   VoiceAssistant — Pleos STT/TTS 3.3.1 (없으면 Android 기본 음성 엔진)
+        VoiceCommandParser → VoiceCommandHandler
         SessionRepository — 세션·알림·제어 기록·온도 기록
         NotificationHelper — 세션 채널(낮음) / 경고 채널(높음)
 ```
@@ -153,7 +182,7 @@ Data    SwitchableVehicleRepository
 |-----------|---------------|
 | 차량특화성 | 정차·주차 상태에서만 동작하는 차량 내 휴식 시나리오, 차량 온도·공조·배터리·기어 데이터와 결합, 차량 중앙 디스플레이 전용 UI |
 | 창의성 | '공조 버튼'이 아닌 '휴식 세션' 단위 관리, 자는 동안 자동 냉난방 + 위험할 때만 깨우는 흐름, 잠들기·수면·기상 단계와 기상 전 사전 온도 맞춤, 수면·일출 화면 |
-| 기술 활용성 | Vehicle SDK 지원 범위 확인 후 기능 활성화, 명령 반영 확인·재시도 제한·에너지 보호 등 보수적 제어 설계, 단위 테스트 |
+| 기술 활용성 | Pleos Vehicle SDK(공조 조회·제어, 배터리·연료, 기어) + SpeechToText·TextToSpeech SDK를 핵심 기능에 사용, Capability 확인 후 기능 활성화, 명령 반영 확인·재시도 제한·에너지 보호, 단위 테스트 28개 |
 | 사업성 | 차박·캠핑, 장거리 출장·여행, 반려동물 동반 이용자 대상. 프리셋·세션 리포트로 반복 사용 유도 |
 
 ## 개발 원칙

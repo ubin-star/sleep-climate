@@ -86,16 +86,10 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    // ─── Pleos Connect Vehicle SDK ───────────────────────────────────────────
-    // Vehicle SDK v2.3.2 (Vehicle State 조회 가능, Vehicle Control은 Coming Soon)
-    // 프로젝트 ID : 314de939-581c-4f72-9a20-3b3deb887307
-    // 클라이언트 ID : HjGgahiwRkOVR-DTI2AE5w
-    //
-    // TODO: document.pleos.ai > Docs > Vehicle SDK > Setup 페이지에서
-    //       실제 maven repository URL과 artifact 좌표를 확인 후 아래를 교체
-    //       현재 알려진 SDK 버전: v2.3.2
-    // implementation("ai.pleos.connect:vehicle-sdk:2.3.2")
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─── Pleos Connect SDK ───────────────────────────────────────────────────
+    implementation(libs.pleos.vehicle)
+    implementation(libs.pleos.tts)
+    implementation(libs.pleos.stt)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

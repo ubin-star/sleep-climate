@@ -69,6 +69,8 @@ import com.sleepclimate.app.ui.components.controlActionLabel
 import com.sleepclimate.app.ui.components.controlStatusLabel
 import com.sleepclimate.app.ui.components.hvacLabel
 import com.sleepclimate.app.ui.session.SessionViewModel
+import com.sleepclimate.app.ui.components.isCompactWidth
+import com.sleepclimate.app.ui.components.screenPadding
 import com.sleepclimate.app.ui.theme.SC
 import com.sleepclimate.app.ui.theme.temperatureColor
 import kotlinx.coroutines.delay
@@ -129,6 +131,14 @@ fun RunningScreen(
             dimmed = true
         }
     }
+    val sleepRequests by viewModel.sleepScreenRequests.collectAsStateWithLifecycle()
+    val sleepRequestsAtEntry = remember { viewModel.sleepScreenRequests.value }
+    LaunchedEffect(sleepRequests) {
+        if (sleepRequests > sleepRequestsAtEntry) dimmed = true
+    }
+    LaunchedEffect(wakeTime) {
+        if (wakeTime) viewModel.announceWake()
+    }
     BackHandler { confirmEnd = true }
 
     val ambient by animateColorAsState(
@@ -154,12 +164,12 @@ fun RunningScreen(
                 }
             }
     ) {
-        Column(Modifier.fillMaxSize().padding(horizontal = 40.dp, vertical = 28.dp)) {
+        Column(Modifier.fillMaxSize().screenPadding()) {
             VehicleStatusBar(vehicle, stringResource(R.string.running_title), simulation)
             Spacer(Modifier.height(24.dp))
             AdaptiveSplit(
                 visual = { modifier ->
-                    Box(modifier.padding(end = 32.dp, bottom = 12.dp).clip(RoundedCornerShape(28.dp)).background(SC.Night)) {
+                    Box(modifier.clip(RoundedCornerShape(28.dp)).background(SC.Night)) {
                         CabinView(
                             interiorTemp = vehicle.interiorTempCelsius,
                             hvacOn = vehicle.isHvacOn == true,
@@ -336,7 +346,7 @@ private fun SleepOverlay(
             Text(
                 vehicle.interiorTempCelsius?.let { "%.1f°".format(it) } ?: "—",
                 style = MaterialTheme.typography.displayLarge,
-                fontSize = MaterialTheme.typography.displayLarge.fontSize * 1.4f,
+                fontSize = MaterialTheme.typography.displayLarge.fontSize * if (isCompactWidth()) 0.8f else 1.4f,
                 color = temperatureColor(vehicle.interiorTempCelsius).copy(alpha = 0.6f)
             )
             Box(Modifier.fillMaxWidth(0.18f).height(2.dp).background(Brush.horizontalGradient(listOf(Color.Transparent, ambient, Color.Transparent))))
@@ -385,9 +395,16 @@ private fun WakeOverlay(
                 style = MaterialTheme.typography.titleLarge, color = SC.TextSecondary
             )
             Spacer(Modifier.height(24.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                BigOutlinedButton(stringResource(R.string.btn_snooze), onSnooze, Modifier.widthIn(min = 260.dp), icon = LineIcons.Moon)
-                BigButton(stringResource(R.string.btn_view_report), onReport, Modifier.widthIn(min = 260.dp))
+            if (isCompactWidth()) {
+                Column(Modifier.padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    BigOutlinedButton(stringResource(R.string.btn_snooze), onSnooze, Modifier.fillMaxWidth(), icon = LineIcons.Moon)
+                    BigButton(stringResource(R.string.btn_view_report), onReport, Modifier.fillMaxWidth())
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    BigOutlinedButton(stringResource(R.string.btn_snooze), onSnooze, Modifier.widthIn(min = 260.dp), icon = LineIcons.Moon)
+                    BigButton(stringResource(R.string.btn_view_report), onReport, Modifier.widthIn(min = 260.dp))
+                }
             }
             Caption(stringResource(R.string.wake_auto_end_format, minutesUntilAutoEnd), color = SC.TextTertiary)
         }

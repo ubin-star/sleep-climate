@@ -34,6 +34,7 @@ import com.sleepclimate.app.ui.components.alertColor
 import com.sleepclimate.app.ui.components.alertIcon
 import com.sleepclimate.app.ui.components.alertLabel
 import com.sleepclimate.app.ui.session.SessionViewModel
+import com.sleepclimate.app.ui.components.screenPadding
 import com.sleepclimate.app.ui.theme.SC
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -47,7 +48,7 @@ fun AlertsScreen(viewModel: SessionViewModel, onBack: () -> Unit) {
     val simulation by viewModel.simulationEnabled.collectAsStateWithLifecycle()
     val timeFormat = remember { SimpleDateFormat("HH:mm:ss", Locale.KOREAN) }
 
-    Column(Modifier.fillMaxSize().background(SC.Background).padding(horizontal = 40.dp, vertical = 28.dp)) {
+    Column(Modifier.fillMaxSize().background(SC.Background).screenPadding()) {
         VehicleStatusBar(vehicle, stringResource(R.string.alert_title), simulation, onBack)
         Spacer(Modifier.height(24.dp))
         if (alerts.isEmpty()) {

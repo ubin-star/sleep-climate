@@ -46,7 +46,17 @@ class HomeViewModel(
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, StartAvailability.CHECKING)
 
+    private val _fallbackSimulation = MutableStateFlow(false)
+    /** Pleos 차량 서비스가 없는 기기라서 자동으로 시뮬레이션으로 실행 중 */
+    val fallbackSimulation: StateFlow<Boolean> = _fallbackSimulation.asStateFlow()
+
     init {
+        viewModelScope.launch {
+            if (!vehicleRepository.isRealVehicleAvailable() && !vehicleRepository.simulationEnabled.value) {
+                vehicleRepository.setSimulation(true, SimulationScenario.SUMMER_NIGHT)
+                _fallbackSimulation.value = true
+            }
+        }
         checkSupportLevel()
         observeVehicle()
     }
