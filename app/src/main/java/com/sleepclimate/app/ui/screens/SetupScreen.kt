@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,6 +46,8 @@ import com.sleepclimate.app.ui.components.TempChevronControl
 import com.sleepclimate.app.ui.components.TemperatureDial
 import com.sleepclimate.app.ui.components.VehicleStatusBar
 import com.sleepclimate.app.ui.session.SessionViewModel
+import com.sleepclimate.app.ui.components.isCompactWidth
+import com.sleepclimate.app.ui.components.screenPadding
 import com.sleepclimate.app.ui.theme.SC
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -72,18 +75,19 @@ fun SetupScreen(
     var energy by remember { mutableIntStateOf(preset.energyAlertPercent) }
     var hasPet by remember { mutableStateOf(false) }
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.KOREAN) }
+    val compact = isCompactWidth()
     val endTime = timeFormat.format(Date(System.currentTimeMillis() + minutes * 60_000L))
     // 시연 모드에서만 잠들기 → 수면 → 기상 전체 흐름을 몇 분 안에 볼 수 있는 짧은 세션 제공
     val durationOptions = (if (simulation) listOf(DEMO_MINUTES to stringResource(R.string.duration_demo)) else emptyList()) +
         listOf(1, 2, 4, 6, 8, 10).map { it * 60 to stringResource(R.string.duration_option_format, it) }
 
-    Column(Modifier.fillMaxSize().background(SC.Background).padding(horizontal = 40.dp, vertical = 28.dp)) {
+    Column(Modifier.fillMaxSize().background(SC.Background).screenPadding()) {
         VehicleStatusBar(vehicle, stringResource(R.string.session_setup_title), simulation, onBack)
         Spacer(Modifier.height(24.dp))
         AdaptiveSplit(
             visual = { modifier ->
                 Box(
-                    modifier.padding(end = 32.dp, bottom = 12.dp).clip(RoundedCornerShape(28.dp)).background(SC.Surface),
+                    modifier.clip(RoundedCornerShape(28.dp)).background(SC.Surface),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -96,14 +100,17 @@ fun SetupScreen(
                             centerValue = "%.1f°".format(target),
                             centerValueIsCurrent = false,
                             caption = stringResource(R.string.setup_dial_caption_format, target - range, target + range),
-                            modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(0.78f)
+                            modifier = if (compact) Modifier.fillMaxHeight(0.92f)
+                            else Modifier.widthIn(max = 480.dp).fillMaxWidth(0.78f)
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(56.dp)) {
-                            InfoValue(
-                                stringResource(R.string.label_interior),
-                                vehicle.interiorTempCelsius?.let { "%.1f°".format(it) } ?: "—"
-                            )
-                            InfoValue(stringResource(R.string.label_end_time), endTime)
+                        if (!compact) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(56.dp)) {
+                                InfoValue(
+                                    stringResource(R.string.label_interior),
+                                    vehicle.interiorTempCelsius?.let { "%.1f°".format(it) } ?: "—"
+                                )
+                                InfoValue(stringResource(R.string.label_end_time), endTime)
+                            }
                         }
                     }
                 }

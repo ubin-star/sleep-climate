@@ -44,8 +44,10 @@ import com.sleepclimate.app.ui.components.LineIcons
 import com.sleepclimate.app.ui.components.Panel
 import com.sleepclimate.app.ui.components.VehicleStatusBar
 import com.sleepclimate.app.ui.components.dimmedIf
+import com.sleepclimate.app.ui.components.isCompactWidth
 import com.sleepclimate.app.ui.home.HomeViewModel
 import com.sleepclimate.app.ui.home.StartAvailability
+import com.sleepclimate.app.ui.components.screenPadding
 import com.sleepclimate.app.ui.theme.SC
 import com.sleepclimate.app.ui.theme.temperatureColor
 
@@ -59,11 +61,11 @@ fun HomeScreen(viewModel: HomeViewModel, onPresetSelected: (SessionPreset) -> Un
     val availability by viewModel.startAvailability.collectAsStateWithLifecycle()
     val simulation by viewModel.simulationEnabled.collectAsStateWithLifecycle()
 
-    Column(Modifier.fillMaxSize().background(SC.Background).padding(horizontal = 40.dp, vertical = 28.dp)) {
+    Column(Modifier.fillMaxSize().background(SC.Background).screenPadding()) {
         VehicleStatusBar(state, stringResource(R.string.app_name), simulation)
         Spacer(Modifier.height(24.dp))
         AdaptiveSplit(
-            visual = { modifier -> CabinPanel(state, support, modifier.padding(end = 32.dp, bottom = 12.dp)) },
+            visual = { modifier -> CabinPanel(state, support, modifier) },
             controls = { modifier, wide ->
                 Column(
                     modifier.then(if (wide) Modifier.verticalScroll(rememberScrollState()) else Modifier),
@@ -73,7 +75,8 @@ fun HomeScreen(viewModel: HomeViewModel, onPresetSelected: (SessionPreset) -> Un
                     ModeTiles(enabled = availability == StartAvailability.READY, onPresetSelected = onPresetSelected)
                     StartHint(availability)
                     Spacer(Modifier.height(4.dp))
-                    SimulationCard(simulation, viewModel.simulationScenario, viewModel::setSimulation)
+                    val fallback by viewModel.fallbackSimulation.collectAsStateWithLifecycle()
+                    SimulationCard(simulation, fallback, viewModel.simulationScenario, viewModel::setSimulation)
                 }
             }
         )
@@ -82,20 +85,39 @@ fun HomeScreen(viewModel: HomeViewModel, onPresetSelected: (SessionPreset) -> Un
 
 @Composable
 private fun CabinPanel(state: VehicleState, support: VehicleSupportLevel, modifier: Modifier) {
-    Box(modifier.clip(RoundedCornerShape(28.dp)).background(SC.Night)) {
+    val compact = isCompactWidth()
+    val cabin = @Composable { m: Modifier ->
         CabinView(
             interiorTemp = state.interiorTempCelsius,
             hvacOn = state.isHvacOn == true,
             hvacMode = state.hvacMode,
             sleeping = false,
             hasPet = false,
-            modifier = Modifier.fillMaxSize()
+            modifier = m,
+            showBackdrop = !compact
         )
-        Column(Modifier.align(Alignment.TopStart).padding(36.dp)) {
+    }
+    if (compact) {
+        // 좁은 화면: 온도 정보를 차량 렌더 위에 따로 배치해 겹치지 않게
+        Column(modifier.clip(RoundedCornerShape(24.dp)).background(SC.Night)) {
+            InteriorSummary(state, support, compact = true, Modifier.padding(start = 22.dp, top = 18.dp, end = 22.dp))
+            cabin(Modifier.fillMaxWidth().weight(1f))
+        }
+    } else {
+        Box(modifier.clip(RoundedCornerShape(28.dp)).background(SC.Night)) {
+            cabin(Modifier.fillMaxSize())
+            InteriorSummary(state, support, compact = false, Modifier.align(Alignment.TopStart).padding(36.dp))
+        }
+    }
+}
+
+@Composable
+private fun InteriorSummary(state: VehicleState, support: VehicleSupportLevel, compact: Boolean, modifier: Modifier) {
+    Column(modifier) {
             Caption(stringResource(R.string.label_interior))
             Text(
                 state.interiorTempCelsius?.let { "%.1f°".format(it) } ?: "—",
-                style = MaterialTheme.typography.displayMedium,
+                style = if (compact) MaterialTheme.typography.displaySmall else MaterialTheme.typography.displayMedium,
                 color = temperatureColor(state.interiorTempCelsius)
             )
             Text(
@@ -110,7 +132,6 @@ private fun CabinPanel(state: VehicleState, support: VehicleSupportLevel, modifi
                 style = MaterialTheme.typography.bodyLarge,
                 color = SC.TextSecondary
             )
-        }
     }
 }
 
@@ -168,6 +189,7 @@ private fun StartHint(availability: StartAvailability) {
 @Composable
 private fun SimulationCard(
     enabled: Boolean,
+    fallback: Boolean,
     scenario: SimulationScenario,
     onChange: (Boolean, SimulationScenario) -> Unit
 ) {
@@ -198,7 +220,10 @@ private fun SimulationCard(
                     selected = selected,
                     onSelect = { selected = it; onChange(true, it) }
                 )
-                Text(stringResource(R.string.sim_notice), style = MaterialTheme.typography.bodyMedium, color = SC.TextSecondary)
+                Text(
+                    stringResource(if (fallback) R.string.sim_fallback_notice else R.string.sim_notice),
+                    style = MaterialTheme.typography.bodyMedium, color = SC.TextSecondary
+                )
             }
         }
     }

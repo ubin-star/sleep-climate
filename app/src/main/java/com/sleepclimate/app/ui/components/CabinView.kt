@@ -46,7 +46,8 @@ fun CabinView(
     hvacMode: HvacMode?,
     sleeping: Boolean,
     hasPet: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showBackdrop: Boolean = true
 ) {
     val transition = rememberInfiniteTransition(label = "cabin")
     val flow by transition.animateFloat(
@@ -69,13 +70,15 @@ fun CabinView(
     )
 
     Canvas(modifier) {
-        drawRect(
-            Brush.radialGradient(
-                listOf(Color(0xFF16191D), SC.Night),
-                center = Offset(size.width / 2, size.height / 2),
-                radius = size.maxDimension * 0.6f
+        if (showBackdrop) {
+            drawRect(
+                Brush.radialGradient(
+                    listOf(Color(0xFF16191D), SC.Night),
+                    center = Offset(size.width / 2, size.height / 2),
+                    radius = size.maxDimension * 0.6f
+                )
             )
-        )
+        }
 
         val carW = size.width * 0.80f
         val carH = min(size.height * 0.62f, carW * 0.44f)

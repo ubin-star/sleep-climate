@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -52,26 +53,52 @@ fun VehicleStatusBar(
         }
     }
     val clock = remember(now) { SimpleDateFormat("HH:mm", Locale.KOREAN).format(Date(now)) }
+    val voice = LocalVoiceControl.current
 
-    Row(Modifier.fillMaxWidth().height(64.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (onBack != null) {
-            BackButton(onBack)
-            Box(Modifier.width(20.dp))
+    if (!isCompactWidth()) {
+        Row(Modifier.fillMaxWidth().height(64.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (onBack != null) {
+                BackButton(onBack)
+                Box(Modifier.width(20.dp))
+            }
+            Text(title, style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f))
+            Row(horizontalArrangement = Arrangement.spacedBy(28.dp), verticalAlignment = Alignment.CenterVertically) {
+                VehicleStatusItems(state, simulation, showExterior = true)
+                Text(clock, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Normal)
+                voice?.let { VoiceButton(listening = it.listening, onClick = it.onClick) }
+            }
         }
-        Text(title, style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f))
+    } else {
+        // 좁은 화면: 제목 줄 + 상태 줄
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                if (onBack != null) {
+                    BackButton(onBack)
+                    Box(Modifier.width(14.dp))
+                }
+                Text(title, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f), maxLines = 1)
+                Text(clock, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(end = 12.dp))
+                voice?.let { VoiceButton(listening = it.listening, onClick = it.onClick) }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                VehicleStatusItems(state, simulation, showExterior = false)
+            }
+        }
+    }
+}
 
-        Row(horizontalArrangement = Arrangement.spacedBy(28.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (simulation) StatusItem(LineIcons.Flask, stringResource(R.string.badge_simulation), SC.Warn)
-            if (state.lastUpdatedMs > 0 && !state.isConnected) {
-                StatusItem(LineIcons.Link, stringResource(R.string.status_disconnected), SC.Danger)
-            }
-            GearIndicator(state.isParked)
-            val energy = state.batteryPercent ?: state.fuelPercent
-            StatusItem(LineIcons.Battery, energy?.let { "$it%" } ?: "—", if ((energy ?: 100) <= 20) SC.Warn else SC.TextSecondary)
-            state.exteriorTempCelsius?.let {
-                Text(stringResource(R.string.exterior_short_format, it), style = MaterialTheme.typography.bodyLarge, color = SC.TextSecondary)
-            }
-            Text(clock, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Normal)
+@Composable
+private fun VehicleStatusItems(state: VehicleState, simulation: Boolean, showExterior: Boolean) {
+    if (simulation) StatusItem(LineIcons.Flask, stringResource(R.string.badge_simulation), SC.Warn)
+    if (state.lastUpdatedMs > 0 && !state.isConnected) {
+        StatusItem(LineIcons.Link, stringResource(R.string.status_disconnected), SC.Danger)
+    }
+    GearIndicator(state.isParked)
+    val energy = state.batteryPercent ?: state.fuelPercent
+    StatusItem(LineIcons.Battery, energy?.let { "$it%" } ?: "—", if ((energy ?: 100) <= 20) SC.Warn else SC.TextSecondary)
+    if (showExterior) {
+        state.exteriorTempCelsius?.let {
+            Text(stringResource(R.string.exterior_short_format, it), style = MaterialTheme.typography.bodyLarge, color = SC.TextSecondary)
         }
     }
 }

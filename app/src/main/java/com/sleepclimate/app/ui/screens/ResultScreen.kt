@@ -4,6 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,6 +37,8 @@ import com.sleepclimate.app.ui.components.alertColor
 import com.sleepclimate.app.ui.components.alertIcon
 import com.sleepclimate.app.ui.components.alertLabel
 import com.sleepclimate.app.ui.session.SessionViewModel
+import com.sleepclimate.app.ui.components.isCompactWidth
+import com.sleepclimate.app.ui.components.screenPadding
 import com.sleepclimate.app.ui.theme.SC
 import com.sleepclimate.app.ui.theme.temperatureColor
 import java.text.SimpleDateFormat
@@ -44,6 +48,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
 /** 휴식 리포트 — 밤사이 온도가 어떻게 관리됐는지 요약 */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ResultScreen(viewModel: SessionViewModel, onHome: () -> Unit) {
     val session by viewModel.currentSession.collectAsStateWithLifecycle()
@@ -62,41 +67,44 @@ fun ResultScreen(viewModel: SessionViewModel, onHome: () -> Unit) {
     val inRangePercent = samples.takeIf { it.isNotEmpty() }
         ?.let { list -> (list.count { it.tempCelsius in current.tempRangeLow..current.tempRangeHigh } * 100f / list.size).roundToInt() }
 
-    Column(Modifier.fillMaxSize().background(SC.Background).padding(horizontal = 40.dp, vertical = 28.dp)) {
+    Column(Modifier.fillMaxSize().background(SC.Background).screenPadding()) {
         VehicleStatusBar(vehicle, stringResource(R.string.result_title), simulation, onHome)
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Caption(stringResource(R.string.session_time_range_format, timeFormat.format(Date(current.startTime)), timeFormat.format(Date(endedAt))))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                StatTile(
+            val stats = listOf(
+                Triple(
                     stringResource(R.string.stat_duration),
                     stringResource(
                         R.string.duration_value_format,
                         TimeUnit.MILLISECONDS.toHours(elapsed).toInt(),
                         (TimeUnit.MILLISECONDS.toMinutes(elapsed) % 60).toInt()
                     ),
-                    Modifier.weight(1f)
-                )
-                StatTile(
+                    SC.TextPrimary
+                ),
+                Triple(
                     stringResource(R.string.stat_avg_temp),
                     avgTemp?.let { "%.1f°".format(it) } ?: stringResource(R.string.no_value),
-                    Modifier.weight(1f),
-                    valueColor = temperatureColor(avgTemp)
-                )
-                StatTile(
+                    temperatureColor(avgTemp)
+                ),
+                Triple(
                     stringResource(R.string.stat_in_range),
                     inRangePercent?.let { stringResource(R.string.percent_value_format, it) } ?: stringResource(R.string.no_value),
-                    Modifier.weight(1f),
-                    valueColor = if ((inRangePercent ?: 0) >= 80) SC.Ok else SC.Warn
-                )
-                StatTile(
+                    if ((inRangePercent ?: 0) >= 80) SC.Ok else SC.Warn
+                ),
+                Triple(
                     stringResource(R.string.stat_auto_control),
                     if (events.isEmpty() && vehicle.supportLevel != VehicleSupportLevel.FULL) stringResource(R.string.no_value)
                     else stringResource(R.string.auto_control_value_format, events.size, events.count { it.status == ControlStatus.CONFIRMED }),
-                    Modifier.weight(1f)
+                    SC.TextPrimary
                 )
+            )
+            stats.chunked(if (isCompactWidth()) 2 else 4).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    row.forEach { (label, value, color) -> StatTile(label, value, Modifier.weight(1f), valueColor = color) }
+                }
             }
 
             Panel(Modifier.fillMaxWidth()) {
@@ -118,7 +126,7 @@ fun ResultScreen(viewModel: SessionViewModel, onHome: () -> Unit) {
                     if (alerts.isEmpty()) {
                         Text(stringResource(R.string.alert_summary_empty), style = MaterialTheme.typography.bodyLarge, color = SC.TextSecondary)
                     } else {
-                        Row(horizontalArrangement = Arrangement.spacedBy(36.dp)) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(36.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             alerts.groupBy { it.type }.forEach { (type, list) ->
                                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                                     LineIcon(alertIcon(type), tint = alertColor(type), size = 22.dp)

@@ -87,6 +87,17 @@ class SessionRepository {
         autoControlSuspended = true
     }
 
+    /** 목표 온도 변경 — 허용 범위 폭은 그대로 유지 */
+    fun updateTarget(targetCelsius: Float) {
+        val session = _currentSession.value ?: return
+        val half = (session.tempRangeHigh - session.tempRangeLow) / 2f
+        _currentSession.value = session.copy(
+            targetTempCelsius = targetCelsius,
+            tempRangeLow = targetCelsius - half,
+            tempRangeHigh = targetCelsius + half
+        )
+    }
+
     /** 휴식 연장 — 종료 시각을 늦추고 기상 준비 알림을 다시 받을 수 있게 한다 */
     fun extendSession(extraMs: Long) {
         val session = _currentSession.value ?: return

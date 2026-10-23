@@ -16,9 +16,14 @@ import com.sleepclimate.app.domain.model.SessionStatus
 import com.sleepclimate.app.domain.model.TempSample
 import com.sleepclimate.app.domain.model.VehicleState
 import com.sleepclimate.app.domain.usecase.MonitorSessionUseCase
+import com.sleepclimate.app.voice.VoiceAssistant
+import com.sleepclimate.app.voice.spoken
+import com.sleepclimate.app.voice.spokenDuration
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -31,7 +36,8 @@ class SessionViewModel(
     private val sessionRepository: SessionRepository,
     private val monitorUseCase: MonitorSessionUseCase,
     private val appContext: Context,
-    val simulationEnabled: StateFlow<Boolean>
+    val simulationEnabled: StateFlow<Boolean>,
+    private val voice: VoiceAssistant
 ) : ViewModel() {
 
     val currentSession: StateFlow<RestSession?> = sessionRepository.currentSession
@@ -57,6 +63,10 @@ class SessionViewModel(
      */
     fun startSession(session: RestSession) {
         sessionRepository.startSession(session)
+        voice.speak(
+            "휴식을 시작합니다. 목표 온도 ${session.targetTempCelsius.spoken()}도로 관리하고, " +
+                "${spokenDuration(session.endTime - session.startTime)} 뒤에 깨워드릴게요."
+        )
         monitorJob?.cancel()
         monitorJob = viewModelScope.launch {
             // stateIn으로 이미 공유된 vehicleState 를 consume
@@ -81,6 +91,8 @@ class SessionViewModel(
     }
 
     private fun dispatchNotification(alert: SessionAlert) {
+        // 깨워야 하는 알림만 음성으로 — 자동 제어가 정상 동작 중일 때는 조용히 둔다
+        if (alert.type in SPOKEN_ALERTS) voice.speak(alert.message)
         when (alert.type) {
             AlertType.TEMP_OUT_OF_RANGE,
             AlertType.COMMAND_REJECTED,
@@ -101,18 +113,58 @@ class SessionViewModel(
         }
     }
 
-    /**
-     * 세션 즉시 종료 (사용자가 언제든 종료 가능)
-     */
     /** 기상 화면의 "10분 더 쉬기" */
     fun extendSession(minutes: Int) {
         sessionRepository.extendSession(minutes * 60_000L)
+        voice.speak("${minutes}분 더 쉬실 수 있게 실내 온도를 계속 관리할게요.")
     }
 
+    /** 휴식 중 목표 온도 변경 (16~30°C) */
+    fun setTarget(celsius: Float) {
+        sessionRepository.updateTarget(celsius.coerceIn(MIN_TARGET, MAX_TARGET))
+    }
+
+    fun adjustTarget(delta: Float) {
+        val current = sessionRepository.currentSession.value ?: return
+        setTarget(current.targetTempCelsius + delta)
+    }
+
+    private val _sleepScreenRequests = MutableStateFlow(0)
+    /** 음성 명령 등으로 수면 화면 전환을 요청한 횟수 — 진행 화면이 값 변화를 관찰 */
+    val sleepScreenRequests: StateFlow<Int> = _sleepScreenRequests.asStateFlow()
+
+    fun requestSleepScreen() {
+        _sleepScreenRequests.value += 1
+    }
+
+    /** 기상 화면이 열릴 때 한 번 */
+    fun announceWake() {
+        val temp = vehicleState.value.interiorTempCelsius
+        voice.speak(
+            "휴식 시간이 끝났습니다." + (temp?.let { " 실내 온도는 ${it.spoken()}도입니다." } ?: "")
+        )
+    }
+
+    /** 세션 즉시 종료 (사용자가 언제든 종료 가능) */
     fun endSession() {
         monitorJob?.cancel()
         monitorJob = null
         sessionRepository.endSession()
+    }
+
+    companion object {
+        private const val MIN_TARGET = 16f
+        private const val MAX_TARGET = 30f
+        private val SPOKEN_ALERTS = setOf(
+            AlertType.TEMP_OUT_OF_RANGE,
+            AlertType.COMMAND_FAILED,
+            AlertType.NOT_PARKED,
+            AlertType.BATTERY_LOW,
+            AlertType.FUEL_LOW,
+            AlertType.AUTO_CONTROL_STOPPED,
+            AlertType.VEHICLE_DISCONNECTED,
+            AlertType.PET_SAFETY_REMINDER
+        )
     }
 
     class Factory(private val app: SleepClimateApp) : ViewModelProvider.Factory {
@@ -123,7 +175,8 @@ class SessionViewModel(
                 app.sessionRepository,
                 app.monitorSessionUseCase,
                 app.applicationContext,
-                app.vehicleRepository.simulationEnabled
+                app.vehicleRepository.simulationEnabled,
+                app.voiceAssistant
             ) as T
         }
     }
