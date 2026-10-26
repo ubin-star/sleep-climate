@@ -16,6 +16,8 @@ build/
 !apk/
 !apk/*.apk
 
+# 로컬 작업 기록·발표 준비 메모
+prep/
 
 # IDE files
 *.iml
