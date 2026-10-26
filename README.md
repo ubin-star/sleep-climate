@@ -5,7 +5,7 @@
 
 ![휴식 중 화면](docs/screenshots/03_running.png)
 
-시연 영상(3분 52초): [demo/김현중_SleepClimate_시연영상.mp4](demo/김현중_SleepClimate_시연영상.mp4)
+시연 영상(3분 52초): [demo/SleepClimate_시연영상.mp4](demo/SleepClimate_시연영상.mp4)
 Pleos 차량 서비스가 없는 에뮬레이터에서 시뮬레이션 차량 데이터로 촬영했습니다.
 
 ## 만든 이유
