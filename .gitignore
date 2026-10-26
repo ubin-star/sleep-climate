@@ -16,10 +16,11 @@ build/
 !apk/
 !apk/*.apk
 
-# AI 작업 기록 (클라이언트 시크릿 등 민감 정보 포함 가능)
+# 로컬 작업 기록·발표 준비 메모
 .agents/
 .specstory/
 .cursorindexingignore
+prep/
 
 # IDE files
 *.iml
