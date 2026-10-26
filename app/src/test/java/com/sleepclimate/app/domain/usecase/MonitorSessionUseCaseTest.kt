@@ -13,17 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-/**
- * MonitorSessionUseCase 단위 테스트 — 6개 케이스
- *
- * 테스트 항목:
- *  1. 온도 초과 → TEMP_OUT_OF_RANGE 알림 발생
- *  2. 차량 연결 끊김 → VEHICLE_DISCONNECTED 알림 발생
- *  3. 배터리 부족 → BATTERY_LOW 알림 발생
- *  4. 주행 중 → NOT_PARKED 알림 발생
- *  5. 정상 온도 → 알림 없음
- *  6. 쿨다운 중 동일 AlertType → 중복 알림 억제
- */
+/** 알림 모드(READ_ONLY) 차량에서의 알림 생성 규칙 */
 class MonitorSessionUseCaseTest {
 
     private lateinit var fakeVehicleRepo: FakeVehicleRepository
@@ -63,7 +53,6 @@ class MonitorSessionUseCaseTest {
         sessionRepo.startSession(defaultSession())
     }
 
-    // ── 테스트 1: 온도 초과 → TEMP_OUT_OF_RANGE ──────────────────────────────
     @Test
     fun `온도 초과 시 TEMP_OUT_OF_RANGE 알림이 발생한다`() = runTest {
         val state = normalState(temp = 30.0f) // tempRangeHigh(24) 초과
@@ -77,7 +66,6 @@ class MonitorSessionUseCaseTest {
         )
     }
 
-    // ── 테스트 2: 차량 연결 끊김 → VEHICLE_DISCONNECTED ──────────────────────
     @Test
     fun `차량 연결 끊김 시 VEHICLE_DISCONNECTED 알림이 발생한다`() = runTest {
         val state = normalState(isConnected = false)
@@ -90,7 +78,6 @@ class MonitorSessionUseCaseTest {
         )
     }
 
-    // ── 테스트 3: 배터리 부족 → BATTERY_LOW ─────────────────────────────────
     @Test
     fun `배터리가 기준치 이하일 때 BATTERY_LOW 알림이 발생한다`() = runTest {
         val state = normalState(battery = 10) // energyAlertPercent(20) 이하
@@ -103,7 +90,6 @@ class MonitorSessionUseCaseTest {
         )
     }
 
-    // ── 테스트 4: 주행 중 → NOT_PARKED ──────────────────────────────────────
     @Test
     fun `주행 중일 때 NOT_PARKED 알림이 발생한다`() = runTest {
         val state = normalState(isParked = false)
@@ -116,7 +102,6 @@ class MonitorSessionUseCaseTest {
         )
     }
 
-    // ── 테스트 5: 정상 온도 → 알림 없음 ────────────────────────────────────
     @Test
     fun `정상 조건에서는 알림이 발생하지 않는다`() = runTest {
         val state = normalState(temp = 22.0f, battery = 80)
@@ -135,7 +120,6 @@ class MonitorSessionUseCaseTest {
         assertEquals("심각 알림이 없어야 한다", 0, temperatureOrCriticalAlerts.size)
     }
 
-    // ── 테스트 6: 쿨다운 중 동일 AlertType → 중복 알림 억제 ─────────────────
     @Test
     fun `쿨다운 기간 중 동일 AlertType 알림은 중복 추가되지 않는다`() = runTest {
         val state = normalState(temp = 30.0f) // TEMP_OUT_OF_RANGE 유발

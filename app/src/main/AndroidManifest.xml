@@ -1,40 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Pleos Connect / Android Automotive OS 차량용 앱 선언 -->
     <uses-feature
         android:name="android.hardware.type.automotive"
         android:required="false" />
 
-    <!-- 위치 정보 (FusedLocation SDK 사용 시) -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-    <!-- 네트워크 상태 확인 -->
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- 포그라운드 서비스 (세션 유지) -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
-
-    <!-- 알림 권한 (API 33+, minSdk=28이므로 런타임 요청도 병행) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-    <!-- 세션 중 CPU/화면 절전 방지 -->
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- 휴식 세션은 수 시간 이어지므로 dataSync(시간 제한) 대신 specialUse -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
-    <!-- Pleos Vehicle SDK 권한 (Pleos App Market 승인 범위 내에서 사용) -->
+    <!-- Pleos Vehicle SDK — App Market 승인 범위 안에서만 사용 -->
     <uses-permission android:name="pleos.car.permission.CAR_CLIMATE" />
     <uses-permission android:name="pleos.car.permission.CONTROL_CAR_CLIMATE" />
     <uses-permission android:name="pleos.car.permission.CAR_ENERGY" />
     <uses-permission android:name="pleos.car.permission.CAR_DRIVE" />
 
-    <!-- 음성 명령 (Pleos SpeechToText / Android SpeechRecognizer) -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-
-    <!-- Pleos 음성 서비스가 없을 때 쓰는 Android 기본 음성 엔진 조회 -->
+    <!-- Pleos 음성 서비스가 없는 기기에서 쓰는 기본 음성 엔진 -->
     <queries>
         <intent>
             <action android:name="android.speech.RecognitionService" />
@@ -54,13 +39,10 @@
         android:theme="@style/Theme.SleepClimate"
         android:networkSecurityConfig="@xml/network_security_config">
 
-        <!-- Pleos Connect SDK 인증 정보 -->
-        <!-- 프로젝트 ID: 314de939-581c-4f72-9a20-3b3deb887307 -->
         <meta-data
             android:name="ai.pleos.connect.CLIENT_ID"
             android:value="HjGgahiwRkOVR-DTI2AE5w" />
 
-        <!-- 메인 액티비티 -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
@@ -71,11 +53,14 @@
             </intent-filter>
         </activity>
 
-        <!-- 세션 포그라운드 서비스 -->
         <service
             android:name=".data.session.SessionForegroundService"
             android:exported="false"
-            android:foregroundServiceType="dataSync|connectedDevice" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="차박·정차 중 휴식 세션 동안 차량 실내 온도를 감시하고 공조를 관리" />
+        </service>
 
     </application>
 

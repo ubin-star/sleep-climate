@@ -9,13 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.mockito.Mockito
 
-/**
- * 단위 테스트용 VehicleRepository 가짜(Fake) 구현.
- *
- * VehicleRepository의 생성자는 Context를 받지만 순수 JVM 테스트에서
- * 실제 Android Context는 필요하지 않다. Mockito.mock()으로 Context 자리만 채우고
- * 모든 동작을 오버라이드하여 실제 Android API를 호출하지 않는다.
- */
+/** 테스트용 차량 — 상태를 직접 지정하고 보낸 명령을 기록 */
 class FakeVehicleRepository : VehicleRepository(
     Mockito.mock(android.content.Context::class.java)
 ) {
@@ -27,11 +21,7 @@ class FakeVehicleRepository : VehicleRepository(
 
     var hvacCommandResult: CommandResult = CommandResult.NOT_SUPPORTED
 
-    /** setHvacMode()로 전달된 명령 기록 */
     val sentModes = mutableListOf<HvacMode>()
-
-    override fun initialize() { /* no-op */ }
-    override fun release()    { /* no-op */ }
 
     override fun observeVehicleState(): Flow<VehicleState> = flowOf(fakeState)
 

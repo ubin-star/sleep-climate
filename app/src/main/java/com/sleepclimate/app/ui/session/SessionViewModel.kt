@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.sleepclimate.app.SleepClimateApp
 import com.sleepclimate.app.data.notification.NotificationHelper
+import com.sleepclimate.app.data.session.SessionForegroundService
 import com.sleepclimate.app.data.session.SessionRepository
 import com.sleepclimate.app.data.vehicle.VehicleRepository
 import com.sleepclimate.app.domain.model.AlertType
@@ -27,10 +28,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
- * 화면 B·C 공용 ViewModel
- * - 세션 설정 → 세션 진행 흐름 담당
- */
+/** 설정·진행·알림·리포트 화면이 함께 쓰는 휴식 세션 상태 */
 class SessionViewModel(
     private val vehicleRepository: VehicleRepository,
     private val sessionRepository: SessionRepository,
@@ -45,10 +43,7 @@ class SessionViewModel(
     val controlEvents: StateFlow<List<ControlEvent>> = sessionRepository.controlEvents
     val tempSamples: StateFlow<List<TempSample>> = sessionRepository.tempSamples
 
-    /**
-     * 차량 상태 — stateIn()으로 단일 구독 보장.
-     * WhileSubscribed(5000)으로 구독자 없어지고 5초 후 업스트림 취소.
-     */
+    // 화면과 세션 감시가 같은 구독을 공유 (차량 SDK 폴링은 한 번만)
     val vehicleState: StateFlow<VehicleState> = vehicleRepository.observeVehicleState()
         .stateIn(
             scope = viewModelScope,
@@ -58,11 +53,9 @@ class SessionViewModel(
 
     private var monitorJob: Job? = null
 
-    /**
-     * 세션 시작 — vehicleState 재사용(새 Flow 생성 없음)
-     */
     fun startSession(session: RestSession) {
         sessionRepository.startSession(session)
+        SessionForegroundService.start(appContext)
         voice.speak(
             "휴식을 시작합니다. 목표 온도 ${session.targetTempCelsius.spoken()}도로 관리하고, " +
                 "${spokenDuration(session.endTime - session.startTime)} 뒤에 깨워드릴게요."
@@ -145,11 +138,11 @@ class SessionViewModel(
         )
     }
 
-    /** 세션 즉시 종료 (사용자가 언제든 종료 가능) */
     fun endSession() {
         monitorJob?.cancel()
         monitorJob = null
         sessionRepository.endSession()
+        SessionForegroundService.stop(appContext)
     }
 
     companion object {

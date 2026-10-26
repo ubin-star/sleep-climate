@@ -1,27 +1,16 @@
 package com.sleepclimate.app.domain.model
 
-import java.time.LocalTime
-
-/**
- * 휴식 세션 설정값
- * - 사용자가 잠들기 전에 한 번 설정하는 단위
- */
+/** 잠들기 전에 한 번 설정하는 휴식 세션 */
 data class RestSession(
     val id: String = java.util.UUID.randomUUID().toString(),
-    val targetTempCelsius: Float,       // 목표 온도 (°C)
-    val tempRangeLow: Float,            // 허용 온도 하한
-    val tempRangeHigh: Float,           // 허용 온도 상한
+    val targetTempCelsius: Float,
+    val tempRangeLow: Float,
+    val tempRangeHigh: Float,
     val startTime: Long = System.currentTimeMillis(),
-    val endTime: Long,                  // 세션 종료 예정 시각 (ms)
-    val energyAlertPercent: Int = 20,   // 배터리/연료 알림 기준 (%)
-    val hasPet: Boolean = false,        // 반려동물 동반 여부
+    val endTime: Long,
+    val energyAlertPercent: Int = 20,   // 배터리·연료가 이 값 이하이면 자동 제어를 멈추고 알림
+    val hasPet: Boolean = false,
     val status: SessionStatus = SessionStatus.IDLE
 )
 
-enum class SessionStatus {
-    IDLE,       // 설정 전
-    RUNNING,    // 세션 진행 중
-    PAUSED,     // 일시 중단
-    ENDED,      // 정상 종료
-    ERROR       // 오류 종료
-}
+enum class SessionStatus { IDLE, RUNNING, ENDED }

@@ -12,13 +12,7 @@ import com.sleepclimate.app.domain.model.AlertType
 import com.sleepclimate.app.domain.model.SessionAlert
 import com.sleepclimate.app.ui.MainActivity
 
-/**
- * 알림 채널 관리 및 알림 전송 헬퍼
- *
- * 채널 구조:
- *  - SESSION_CHANNEL_ID  : 세션 진행 중 지속 알림 (IMPORTANCE_LOW)
- *  - ALERT_CHANNEL_ID    : 온도·배터리·연결 경고 알림 (IMPORTANCE_HIGH)
- */
+/** 세션 진행 표시(조용한 채널)와 깨워야 하는 경고(중요 채널) */
 object NotificationHelper {
 
     const val SESSION_CHANNEL_ID = "sleep_climate_session"
@@ -28,13 +22,9 @@ object NotificationHelper {
     private const val NOTIFICATION_ID_ENERGY     = 2002
     private const val NOTIFICATION_ID_CONNECTION = 2003
 
-    /**
-     * 앱 시작 시 한 번만 호출 — 두 알림 채널을 모두 등록한다.
-     */
     fun createChannels(context: Context) {
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // 세션 진행 채널 — 낮은 우선순위 (상시 표시)
         val sessionChannel = NotificationChannel(
             SESSION_CHANNEL_ID,
             context.getString(R.string.notification_channel_session),
@@ -43,7 +33,6 @@ object NotificationHelper {
             description = context.getString(R.string.notification_channel_session_desc)
         }
 
-        // 경고 채널 — 높은 우선순위 (온도·배터리·연결 이상)
         val alertChannel = NotificationChannel(
             ALERT_CHANNEL_ID,
             context.getString(R.string.notification_channel_alert),
