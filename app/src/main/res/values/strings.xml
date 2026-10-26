@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">SLEEP CLIMATE</string>
-    <string name="app_tagline">차박·정차 중 맞춤형 실내 온도 관리</string>
 
     <!-- 공통 상태 -->
     <string name="status_checking">확인 중…</string>
-    <string name="status_connected">차량 연결됨</string>
     <string name="status_disconnected">차량 연결 없음</string>
     <string name="badge_full_control">자동 제어 지원</string>
     <string name="badge_read_only">알림 모드</string>
@@ -14,13 +12,7 @@
     <string name="battery_format">%1$d%%</string>
     <string name="fuel_format">%1$d%%</string>
     <string name="energy_unavailable">—</string>
-    <string name="park_status_parked">주차 중</string>
-    <string name="park_status_driving">주행 중</string>
-    <string name="park_status_unknown">—</string>
-    <string name="interior_short_format">실내 %1$.1f°C</string>
     <string name="exterior_short_format">외부 %1$.1f°C</string>
-    <string name="last_updated_format">마지막 갱신 %1$s</string>
-    <string name="btn_back">뒤로</string>
     <string name="label_interior">실내</string>
     <string name="label_end_time">예상 종료</string>
     <string name="info_hvac">공조</string>
@@ -36,7 +28,6 @@
     <string name="btn_snooze">10분 더 쉬기</string>
     <string name="btn_view_report">리포트 보기</string>
     <string name="duration_demo">시연 3분</string>
-    <string name="duration_minutes_format">%1$d분</string>
     <string name="home_mode_full">공조 자동 제어 지원 차량</string>
     <string name="home_mode_read_only">공조 제어 미지원 · 온도 이탈 시 알림</string>
 
@@ -51,7 +42,6 @@
     <string name="home_hint_disconnected">차량 연결 후 세션을 시작할 수 있습니다.</string>
     <string name="home_hint_no_support">이 차량에서는 필요한 데이터를 확인할 수 없어 세션을 시작할 수 없습니다.</string>
     <string name="home_hint_driving">안전한 장소에 주차한 뒤 세션을 시작할 수 있습니다.</string>
-    <string name="home_hint_read_only">이 차량은 공조 자동 제어를 지원하지 않아, 온도 이탈 시 알림으로 안내합니다.</string>
 
     <!-- 시연 모드 (자동 제어 시뮬레이션) -->
     <string name="sim_switch_label">자동 제어 시뮬레이션</string>
@@ -68,7 +58,6 @@
     <string name="label_duration">휴식 시간</string>
     <string name="label_energy_alert">배터리·연료 보호 기준</string>
     <string name="label_pet">반려동물 동반</string>
-    <string name="temp_value_format">%1$.1f°C</string>
     <string name="range_option_format">±%1$.1f°</string>
     <string name="duration_option_format">%1$d시간</string>
     <string name="energy_option_format">%1$d%%</string>
@@ -76,20 +65,15 @@
     <string name="energy_preview_format">%1$d%% 이하면 자동 제어 중단 후 알림</string>
     <string name="dial_label_target">목표 온도</string>
     <string name="setup_dial_caption_format">허용 %1$.1f ~ %2$.1f°C</string>
-    <string name="current_vehicle_temp_format">현재 차량 실내 %1$.1f°C</string>
-    <string name="current_vehicle_temp_unavailable">현재 차량 실내 온도: 지원 데이터 없음</string>
     <string name="pet_safety_notice">이 앱의 알림만으로 차량 내 반려동물의 안전을 확인할 수 없습니다. 반드시 직접 확인해 주세요.</string>
     <string name="btn_confirm_session">세션 시작</string>
 
     <!-- 세션 진행 -->
-    <string name="session_running_label">세션 진행 중</string>
     <string name="dial_label_current">현재 실내</string>
     <string name="running_dial_caption_format">목표 %1$.1f° · 허용 %2$.1f~%3$.1f°</string>
     <string name="mode_full">자동 제어</string>
     <string name="mode_read_only">알림 모드</string>
     <string name="mode_none">제어 불가</string>
-    <string name="hvac_status_format">공조 %1$s · 외부 %2$.1f°C</string>
-    <string name="hvac_status_no_exterior">공조 %1$s</string>
     <string name="hvac_mode_off">꺼짐</string>
     <string name="hvac_mode_cooling">냉방 가동 중</string>
     <string name="hvac_mode_heating">난방 가동 중</string>

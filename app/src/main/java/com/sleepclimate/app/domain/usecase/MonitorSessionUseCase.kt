@@ -82,12 +82,12 @@ class MonitorSessionUseCase(
 
         // 5. 기상 단계 진입 알림 (한 번만) — 이후 허용 범위를 좁혀 목표 온도로 미리 맞춘다
         val now = System.currentTimeMillis()
-        if (session.phaseAt(now) == SessionPhase.WAKING && !sessionRepo.endingSoonNotified) {
+        if (session.phaseAt(now) == SessionPhase.WAKING && !sessionRepo.wakeNotified) {
             sessionRepo.addAlert(SessionAlert(
                 type = AlertType.SESSION_ENDING_SOON,
                 message = "기상 준비를 시작합니다. 실내를 목표 온도 ${session.targetTempCelsius}°C에 맞춥니다."
             ))
-            sessionRepo.markEndingSoonNotified()
+            sessionRepo.markWakeNotified()
         }
         val range = session.effectiveRangeAt(now)
 

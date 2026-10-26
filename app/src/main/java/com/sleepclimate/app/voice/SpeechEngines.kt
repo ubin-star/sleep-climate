@@ -53,7 +53,7 @@ interface SpeechInputListener {
 
 private val mainHandler = Handler(Looper.getMainLooper())
 
-// ─── Pleos Connect TextToSpeech / SpeechToText SDK 3.3.1 ────────────────────────────
+// Pleos Connect TextToSpeech / SpeechToText SDK 3.3.1
 
 class PleosTts private constructor(private val tts: TextToSpeech) : SpeechOutputEngine {
     override val engineName = "Pleos TTS"
@@ -172,7 +172,7 @@ class PleosStt private constructor(private val stt: SpeechToText) : SpeechInputE
     }
 }
 
-// ─── Android 기본 음성 엔진 (Pleos 음성 서비스가 없는 폰·에뮬레이터용) ───────────────
+// Android 기본 음성 엔진 (Pleos 음성 서비스가 없는 폰·에뮬레이터용)
 
 class AndroidTts private constructor(private val tts: AndroidTextToSpeech) : SpeechOutputEngine {
     override val engineName = "Android TTS"

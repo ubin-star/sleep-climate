@@ -70,11 +70,11 @@ class WakePhaseTest {
         val sessionRepo = SessionRepository()
         val now = System.currentTimeMillis()
         sessionRepo.startSession(session(now - hour, now + minute))
-        sessionRepo.markEndingSoonNotified()
+        sessionRepo.markWakeNotified()
 
         sessionRepo.extendSession(10 * minute)
 
         assertTrue(sessionRepo.currentSession.value!!.endTime >= now + 11 * minute - 1000)
-        assertEquals(false, sessionRepo.endingSoonNotified)
+        assertEquals(false, sessionRepo.wakeNotified)
     }
 }
