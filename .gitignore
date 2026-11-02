@@ -1,7 +1,7 @@
-# Local configuration — contains SDK path, never commit
+# Local configuration
 local.properties
 
-# Release signing — keystore와 비밀번호는 절대 커밋하지 않음
+# Release signing
 keystore.properties
 *.jks
 *.keystore
@@ -12,17 +12,18 @@ keystore.properties
 build/
 .gradle/
 
-# 공모전 제출용 APK는 apk/ 폴더에만 커밋
+# 제출용 APK
 !apk/
 !apk/*.apk
 
-# 로컬 작업 기록·발표 준비 메모
+# 개인 메모
 prep/
 
-# IDE files
+# IDE
 *.iml
 .idea/
+.vscode/
 .DS_Store
 
-# Kotlin incremental compilation
+# Kotlin
 **/*.kotlin_module
